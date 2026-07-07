@@ -1,0 +1,242 @@
+/* ── Backdrop — sits above the product modal (z 1200) ── */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(4px);
+  z-index: 1200;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Lightbox shell ── */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1201;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Top bar ── */
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.topLeft {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.fabricName {
+  font-family: var(--font-display, 'Playfair Display', serif);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #F5EDD5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.garmentLabel {
+  font-size: 0.78rem;
+  color: rgba(245, 237, 213, 0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.topRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* ── Eye / Try-On button ── */
+.eyeBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 100px;
+  border: 1.5px solid rgba(201, 168, 76, 0.4);
+  background: rgba(201, 168, 76, 0.08);
+  color: #C9A84C;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+.eyeBtn:hover {
+  background: rgba(201, 168, 76, 0.18);
+  border-color: #C9A84C;
+  box-shadow: 0 0 20px rgba(201, 168, 76, 0.2);
+  transform: translateY(-1px);
+}
+.eyeBtnActive {
+  background: #C9A84C;
+  border-color: #C9A84C;
+  color: #1A0E00;
+  box-shadow: 0 0 24px rgba(201, 168, 76, 0.35);
+}
+
+/* ── Close button ── */
+.closeBtn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.closeBtn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  transform: scale(1.08);
+}
+
+/* ── Main canvas area ── */
+.canvas {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #0a0a0a;
+}
+
+/* Fabric image — full cover background */
+.fabricLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/*
+  Garment sketch overlay — zero blend modes, zero filters.
+  The sketch has been processed by chromaKeyToTransparent():
+  magenta pixels are now real transparent alpha.
+  A plain img stacked over the fabric is all that's needed.
+*/
+.sketchLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  animation: overlayReveal 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* The actual processed sketch — fills the container, centred */
+.sketchImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+/* Processing spinner overlay */
+.processingOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(10, 10, 10, 0.55);
+  backdrop-filter: blur(4px);
+  color: rgba(245, 237, 213, 0.8);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+/* Spinning loader icon */
+.spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes overlayReveal {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Floating hint text */
+.hint {
+  position: absolute;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(10, 10, 10, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(201, 168, 76, 0.2);
+  border-radius: 100px;
+  color: rgba(245, 237, 213, 0.65);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ── Bottom info bar ── */
+.bottomBar {
+  padding: 10px 20px;
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.bottomNote {
+  font-size: 0.76rem;
+  color: rgba(245, 237, 213, 0.4);
+  letter-spacing: 0.03em;
+  line-height: 1.5;
+}
+
+/* ── Mobile ── */
+@media (max-width: 640px) {
+  .topBar  { padding: 12px 14px; }
+  .eyeBtn  { padding: 8px 14px; font-size: 0.72rem; }
+  .fabricName { font-size: 0.95rem; }
+  .hint { font-size: 0.7rem; padding: 8px 14px; bottom: 56px; }
+}

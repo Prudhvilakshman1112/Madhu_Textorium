@@ -13,7 +13,7 @@ import { GiSewingNeedle, GiClothes, GiTie } from 'react-icons/gi';
 import { PiScissors, PiRuler } from 'react-icons/pi';
 import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
-import ProductModal, { Product } from '@/components/ProductModal/ProductModal';
+import ProductModal, { Product, FabricSwatch } from '@/components/ProductModal/ProductModal';
 import styles from './page.module.css';
 
 // ─── DATA ────────────────────────────────────────────────
@@ -35,31 +35,65 @@ const CATEGORIES = [
   { id: 'kurta', name: 'Kurta', image: '/images/real/kurta/kurta/IMG_20260702_130159.png.jpeg', desc: 'Festive & Ethnic Grace' },
 ];
 
+// ─── Per-category fabric swatches ──────────────────────────────────────────
+
+const FABRIC_DATA: Record<string, FabricSwatch[]> = {
+  'Suits':     [{ id: 'suits-f1',     name: 'Charcoal Herringbone Wool', image: '/images/fabrics/fabric-suits.png' }],
+  'Shirts':    [{ id: 'shirts-f1',    name: 'White Oxford Cotton',        image: '/images/fabrics/fabric-shirts.png' }],
+  'Pants':     [{ id: 'pants-f1',     name: 'Navy Gabardine',             image: '/images/fabrics/fabric-pants.png' }],
+  'Modi Coat': [{ id: 'modi-f1',      name: 'Royal Blue Brocade',         image: '/images/fabrics/fabric-modi-coat.png' }],
+  'Jodhpuri':  [{ id: 'jodh-f1',      name: 'Deep Maroon Silk',           image: '/images/fabrics/fabric-jodhpuri.png' }],
+  'Sherwani':  [{ id: 'sher-f1',      name: 'Ivory Gold Brocade',         image: '/images/fabrics/fabric-sherwani.png' }],
+  'Blazers':   [{ id: 'blaz-f1',      name: 'Navy Blue Tweed',            image: '/images/fabrics/fabric-blazers.png' }],
+  'Kurta':     [{ id: 'kurta-f1',     name: 'White Cotton Mulmul',        image: '/images/fabrics/fabric-kurta.png' }],
+};
+
+// ─── Per-category garment outline sketches ──────────────────────────────────
+const SKETCH_MAP: Record<string, string> = {
+  'Suits':     '/images/sketches/sketch-suits.jpeg',
+  'Shirts':    '/images/sketches/sketch-shirts.jpeg',
+  'Pants':     '/images/sketches/sketch-pants.jpeg',
+  'Modi Coat': '/images/sketches/sketch-modi-coat.jpeg',
+  'Jodhpuri':  '/images/sketches/sketch-jodhpuri.jpeg',
+  'Sherwani':  '/images/sketches/sketch-sherwani.jpeg',
+  'Blazers':   '/images/sketches/sketch-blazers.jpeg',
+  'Kurta':     '/images/sketches/sketch-kurta.jpeg',
+};
+
+// Helper: enrich a raw product with per-category swatch + sketch data
+function withMeta(p: Omit<Product, 'fabricSwatches' | 'sketchImage'>): Product {
+  return {
+    ...p,
+    fabricSwatches: FABRIC_DATA[p.category] || [],
+    sketchImage:    SKETCH_MAP[p.category]  || undefined,
+  };
+}
+
 const PRODUCTS: Product[] = [
-  { id: 'p1', name: 'Royal Heritage Suit', category: 'Suits', price: 8500, isTopSeller: true,
+  withMeta({ id: 'p1', name: 'Royal Heritage Suit', category: 'Suits', price: 8500, isTopSeller: true,
     image: '/images/real/suits/royal-heritage-suit-2/IMG_20260702_130407.png.jpeg',
-    imageFav: '/images/real/suits/royal-heritage-suit-1/IMG_20260702_130252.png.jpeg' },
-  { id: 'p2', name: 'Executive Slim Fit Suit', category: 'Suits', price: 7200,
-    image: '/images/real/suits/executive-slim-suit/IMG_20260702_130620.png.jpeg' },
-  { id: 'p3', name: 'Premium Oxford Shirt', category: 'Shirts', price: 2400,
-    image: '/images/real/shirts/oxford-shirt/IMG_20260702_134328.png.jpeg' },
-  { id: 'p4', name: 'Modi Coat Ensemble', category: 'Modi Coat', price: 5500,
-    image: '/images/real/modi-coat/modi-coat-ensemble/IMG_20260702_130732.png.jpeg' },
-  { id: 'p5', name: 'Jodhpuri Classic', category: 'Jodhpuri', price: 9500, isTopSeller: true,
+    imageFav: '/images/real/suits/royal-heritage-suit-1/IMG_20260702_130252.png.jpeg' }),
+  withMeta({ id: 'p2', name: 'Executive Slim Fit Suit', category: 'Suits', price: 7200,
+    image: '/images/real/suits/executive-slim-suit/IMG_20260702_130620.png.jpeg' }),
+  withMeta({ id: 'p3', name: 'Premium Oxford Shirt', category: 'Shirts', price: 2400,
+    image: '/images/real/shirts/oxford-shirt/IMG_20260702_134328.png.jpeg' }),
+  withMeta({ id: 'p4', name: 'Modi Coat Ensemble', category: 'Modi Coat', price: 5500,
+    image: '/images/real/modi-coat/modi-coat-ensemble/IMG_20260702_130732.png.jpeg' }),
+  withMeta({ id: 'p5', name: 'Jodhpuri Classic', category: 'Jodhpuri', price: 9500, isTopSeller: true,
     image: '/images/real/jodhpuri/jodhpuri-classic-2/IMG_20260702_130858.png.jpeg',
-    imageFav: '/images/real/jodhpuri/jodhpuri-classic-1/IMG_20260702_130529.png.jpeg' },
-  { id: 'p6', name: 'Grand Sherwani Set', category: 'Sherwani', price: 12000, isTopSeller: true,
+    imageFav: '/images/real/jodhpuri/jodhpuri-classic-1/IMG_20260702_130529.png.jpeg' }),
+  withMeta({ id: 'p6', name: 'Grand Sherwani Set', category: 'Sherwani', price: 12000, isTopSeller: true,
     image: '/images/real/sherwani/grand-sherwani-2/IMG_20260702_125944.png.jpeg',
-    imageFav: '/images/real/sherwani/grand-sherwani-1/IMG_20260702_130111.png.jpeg' },
-  { id: 'p7', name: 'Business Blazer', category: 'Blazers', price: 5800,
-    image: '/images/real/blazers/business-blazer/IMG_20260702_125737.png.jpeg' },
-  { id: 'p8', name: 'Festive Kurta Pajama', category: 'Kurta', price: 3200,
-    image: '/images/real/kurta/festive-kurta/IMG_20260702_130351.png.jpeg' },
-  { id: 'p9', name: 'Merino Formal Trousers', category: 'Pants', price: 2800,
-    image: '/images/real/pants/merino-trousers/IMG_20260702_134403.png.jpeg' },
-  { id: 'p10', name: 'Three-Piece Prestige Suit', category: 'Suits', price: 14000, isTopSeller: true,
+    imageFav: '/images/real/sherwani/grand-sherwani-1/IMG_20260702_130111.png.jpeg' }),
+  withMeta({ id: 'p7', name: 'Business Blazer', category: 'Blazers', price: 5800,
+    image: '/images/real/blazers/business-blazer/IMG_20260702_125737.png.jpeg' }),
+  withMeta({ id: 'p8', name: 'Festive Kurta Pajama', category: 'Kurta', price: 3200,
+    image: '/images/real/kurta/festive-kurta/IMG_20260702_130351.png.jpeg' }),
+  withMeta({ id: 'p9', name: 'Merino Formal Trousers', category: 'Pants', price: 2800,
+    image: '/images/real/pants/merino-trousers/IMG_20260702_134403.png.jpeg' }),
+  withMeta({ id: 'p10', name: 'Three-Piece Prestige Suit', category: 'Suits', price: 14000, isTopSeller: true,
     image: '/images/real/suits/three-piece-suit-2/IMG_20260702_125853.png.jpeg',
-    imageFav: '/images/real/suits/three-piece-suit-1/IMG_20260702_130224.png.jpeg' },
+    imageFav: '/images/real/suits/three-piece-suit-1/IMG_20260702_130224.png.jpeg' }),
 ];
 
 const TOP_SELLERS = PRODUCTS.filter(p => p.isTopSeller);
@@ -142,9 +176,7 @@ export default function HomePage() {
             <span className={styles.heroDot} />
           </div>
           <h1 className={styles.heroTitle}>
-            Where Fabric Meets
-            <br />
-            <span className={styles.heroTitleAccent}>Flawless Craftsmanship</span>
+            Level Up <span className={styles.heroTitleAccent}>Your Style</span>
           </h1>
           <p className={styles.heroSubtitle}>
             Custom-tailored suits, sherwanis, Modi coats &amp; more — stitched to your exact body
@@ -163,7 +195,7 @@ export default function HomePage() {
           </div>
           <div className={styles.heroStats}>
             <div className={styles.heroStat}>
-              <span className={styles.heroStatNum}>15+</span>
+              <span className={styles.heroStatNum}>40+</span>
               <span className={styles.heroStatLabel}>Years of Excellence</span>
             </div>
             <div className={styles.heroStatDivider} />
@@ -292,11 +324,21 @@ export default function HomePage() {
             <p className="section-subtitle">From formal suits to regal sherwanis — every category comes with full customization.</p>
           </div>
           <div className={styles.categoriesGrid}>
-            {CATEGORIES.map(cat => (
+            {CATEGORIES.map(cat => {
+              const openCategory = () => setSelectedProduct({
+                id: cat.id,
+                name: cat.name,
+                category: cat.name,
+                price: 0,
+                image: cat.image,
+                fabricSwatches: FABRIC_DATA[cat.name] || [],
+                sketchImage: SKETCH_MAP[cat.name] || undefined,
+              });
+              return (
               <div key={cat.id} className={styles.categoryCard}
-                onClick={() => setSelectedProduct({ id: cat.id, name: cat.name, category: cat.name, price: 0, image: cat.image })}
+                onClick={openCategory}
                 role="button" tabIndex={0}
-                onKeyDown={e => e.key === 'Enter' && setSelectedProduct({ id: cat.id, name: cat.name, category: cat.name, price: 0, image: cat.image })}
+                onKeyDown={e => e.key === 'Enter' && openCategory()}
               >
                 <div className={styles.categoryImage}>
                   <Image src={cat.image} alt={cat.name} fill sizes="(max-width: 480px) 50vw, (max-width: 1024px) 25vw, 25vw" style={{ objectFit: 'cover', transition: 'transform 0.6s ease' }} />
@@ -313,7 +355,8 @@ export default function HomePage() {
                   </button>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -494,7 +537,7 @@ export default function HomePage() {
                 <div className={styles.contactIconWrap}><FiMapPin size={20} /></div>
                 <div>
                   <h4 className={styles.contactCardTitle}>Our Store</h4>
-                  <p className={styles.contactCardText}>Door No 27-4-30, Beside Super Bazar,<br />Main Road, Poorna Market,<br />Visakhapatnam – 530001, Andhra Pradesh</p>
+                  <p className={styles.contactCardText}>Door No 27-4-30, Beside Super Bazar,<br />Main Road, Poorna Market,<br />Visakhapatnam – 530002, Andhra Pradesh</p>
                 </div>
               </div>
               <div className={styles.contactCard}>
@@ -522,7 +565,7 @@ export default function HomePage() {
                 <div className={styles.contactIconWrap}><FiSmartphone size={20} /></div>
                 <div>
                   <h4 className={styles.contactCardTitle}>Business Hours</h4>
-                  <p className={styles.contactCardText}>Monday – Saturday: 10:00 AM – 8:00 PM<br />Sunday: 11:00 AM – 6:00 PM</p>
+                  <p className={styles.contactCardText}>Monday – Saturday: 10:00 AM – 9:00 PM<br />Sunday: 3:00 PM – 9:00 PM</p>
                 </div>
               </div>
             </div>
@@ -569,11 +612,11 @@ export default function HomePage() {
                 <p className={styles.footerAddress}>
                   Door No 27-4-30, Beside Super Bazar,<br />
                   Main Road, Poorna Market,<br />
-                  Visakhapatnam – 530001, AP
+                  Visakhapatnam – 530002, AP
                 </p>
                 <div className={styles.footerHoursBlock}>
-                  <p className={styles.footerHours}>Mon – Sat: 10 AM – 8 PM</p>
-                  <p className={styles.footerHours}>Sunday: 11 AM – 6 PM</p>
+                  <p className={styles.footerHours}>Mon – Sat: 10 AM – 9 PM</p>
+                  <p className={styles.footerHours}>Sunday: 3 PM – 9 PM</p>
                 </div>
               </div>
             </div>

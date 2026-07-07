@@ -8,19 +8,20 @@ import { FaWhatsapp } from 'react-icons/fa';
 import { FiArrowLeft, FiArrowRight, FiUpload, FiCheck, FiX, FiScissors, FiInfo, FiAlertCircle } from 'react-icons/fi';
 import styles from './page.module.css';
 
-// ─── GARMENT TYPES (using real product images) ───────────────────────────────
+// ─── GARMENT TYPES ────────────────────────────────────────────────────────────
 const GARMENT_TYPES = [
-  { id: 'shirt',     label: 'Shirt',              image: '/images/real/shirts/shirts/IMG_20260702_134315.jpg.jpeg',        desc: 'Formal, casual, party wear' },
-  { id: 'suit',      label: 'Suit',               image: '/images/real/suits/suits/IMG_20260702_130035.png.jpeg',          desc: '2-piece, 3-piece, slim fit' },
-  { id: 'pant',      label: 'Pant / Trouser',     image: '/images/real/pants/pants/IMG_20260702_134436.png.jpeg',          desc: 'Formal, chinos, pleated' },
-  { id: 'modi-coat', label: 'Modi Coat',          image: '/images/real/modi-coat/modi-coat/IMG_20260702_130607.png.jpeg',  desc: 'Classic Indian formal' },
-  { id: 'jodhpuri',  label: 'Jodhpuri Suit',      image: '/images/real/jodhpuri/jodhpuri/IMG_20260702_125452.png.jpeg',    desc: 'Royal traditional wear' },
-  { id: 'sherwani',  label: 'Sherwani',           image: '/images/real/sherwani/sherwani/IMG_20260702_125913.png.jpeg',    desc: 'Wedding & ceremonies' },
-  { id: 'blazer',    label: 'Blazer',             image: '/images/real/blazers/blazers/IMG_20260702_130317.png.jpeg',      desc: 'Casual, formal, events' },
-  { id: 'kurta',     label: 'Kurta / Kurta Pajama', image: '/images/real/kurta/kurta/IMG_20260702_130159.png.jpeg',       desc: 'Festive, ethnic, casual' },
+  { id: 'shirt',        label: 'Shirt',                image: '/images/real/shirts/shirts/IMG_20260702_134315.jpg.jpeg',       desc: 'Formal, casual, party wear' },
+  { id: 'suit',         label: 'Suit',                 image: '/images/real/suits/suits/IMG_20260702_130035.png.jpeg',         desc: '2-piece, 3-piece, slim fit' },
+  { id: 'pant',         label: 'Pant / Trouser',       image: '/images/real/pants/pants/IMG_20260702_134436.png.jpeg',         desc: 'Formal, chinos, pleated' },
+  { id: 'modi-coat',    label: 'Modi Coat / Nehru',    image: '/images/real/modi-coat/modi-coat/IMG_20260702_130607.png.jpeg', desc: 'Waist coat, Modi jacket' },
+  { id: 'jodhpuri',     label: 'Jodhpuri Suit',        image: '/images/real/jodhpuri/jodhpuri/IMG_20260702_125452.png.jpeg',   desc: 'Royal traditional wear' },
+  { id: 'sherwani',     label: 'Sherwani',             image: '/images/real/sherwani/sherwani/IMG_20260702_125913.png.jpeg',   desc: 'Wedding & ceremonies' },
+  { id: 'blazer',       label: 'Blazer',               image: '/images/real/blazers/blazers/IMG_20260702_130317.png.jpeg',     desc: 'Casual, formal, events' },
+  { id: 'kurta',        label: 'Kurta / Kurta Pajama', image: '/images/real/kurta/kurta/IMG_20260702_130159.png.jpeg',        desc: 'Festive, ethnic, casual' },
+  { id: 'indo-western', label: 'Indo Western',         image: '/images/real/sherwani/sherwani/IMG_20260702_125913.png.jpeg',   desc: '3-piece: Coat + Kurta + Pyjama' },
 ];
 
-// ─── FABRIC & COLOUR OPTIONS ────────────────────────────────────────────────
+// ─── FABRIC & COLOUR OPTIONS ──────────────────────────────────────────────────
 const FABRIC_OPTIONS = [
   'Wool Suiting', 'Polyester Blend', 'Cotton Linen', 'Silk Blend',
   'Terylene', 'Raymond Fabric', 'Arvind Fabric', 'Pure Cotton',
@@ -33,14 +34,97 @@ const COLOR_PALETTE = [
   'Wine Red', 'Off White', 'Sky Blue', 'Golden', 'Custom (describe below)',
 ];
 
-// ─── MEASUREMENT TYPES ───────────────────────────────────────────────────────
+// ─── MEASUREMENT TYPES ────────────────────────────────────────────────────────
+// Fields match the tailor's handwritten spec exactly.
 interface Measurements {
   height: string; weight: string;
-  chest: string; shoulder: string; sleeveLength: string; neck: string;
-  waist: string; hips: string; inseam: string; thigh: string;
-  shirtLength: string; coatLength: string; seatWidth: string;
+  // Upper body
+  chest: string; stomach: string; shoulder: string; sleeveLength: string; neck: string; bicep: string;
+  // Garment lengths
+  shirtLength: string; coatLength: string;
+  // Lower body
+  waist: string; hips: string; thigh: string; knee: string; ankle: string; rise: string; inseam: string;
+  pantLength: string; seatWidth: string;
 }
 
+// ─── STYLE OPTIONS ────────────────────────────────────────────────────────────
+// Garment-specific style choices (cut, buttons, lapel, pocket, etc.)
+interface StyleOptions {
+  pantFinish: string;       // Straight | Formal Finish | Baggy | Boot Cut
+  cutStyle: string;         // No Cut | 1 Cut | 2 Cut
+  buttonCount: string;      // 1 Button | 2 Button | 4 Button | 6 Button
+  lapelStyle: string;       // Plain Lapel | Tuxedo Lapel
+  lapelColor: string;       // free text colour when Tuxedo Lapel
+  pocketStyle: string;      // Pocket | No Pocket
+  buttonPlacement: string;  // Button Inside | Button Outside
+  splitStyle: string;       // Side Split | Standard
+  pyjamaModel: string;      // Button Model | Hook Model
+  pyjamaElastic: string;    // Back Elastic | No Elastic
+}
+
+interface StyleOptionGroup {
+  label: string;
+  key: keyof StyleOptions;
+  options: string[];
+  hint?: string;
+  isText?: boolean;          // render a text input instead of chips
+}
+
+// ─── STYLE OPTION CONFIGS PER GARMENT ────────────────────────────────────────
+const GARMENT_STYLE_OPTIONS: Record<string, StyleOptionGroup[]> = {
+  pant: [
+    { label: 'Pant Finish / Style', key: 'pantFinish',
+      options: ['Straight', 'Formal Finish', 'Baggy', 'Boot Cut'] },
+  ],
+  jodhpuri: [
+    { label: 'Cut Style',    key: 'cutStyle',     options: ['No Cut', '1 Cut', '2 Cut'] },
+    { label: 'Buttons',      key: 'buttonCount',  options: ['1 Button', '2 Button', '4 Button', '6 Button'] },
+    { label: 'Lapel Style',  key: 'lapelStyle',   options: ['Plain Lapel', 'Tuxedo Lapel'] },
+    { label: 'Lapel Colour (if Tuxedo)', key: 'lapelColor', options: [], isText: true,
+      hint: 'Specify colour for tuxedo lapel (e.g. Black, Ivory, Maroon)' },
+  ],
+  blazer: [
+    { label: 'Cut Style',    key: 'cutStyle',     options: ['No Cut', '1 Cut', '2 Cut'] },
+    { label: 'Buttons',      key: 'buttonCount',  options: ['1 Button', '2 Button', '4 Button', '6 Button'] },
+    { label: 'Lapel Style',  key: 'lapelStyle',   options: ['Plain Lapel', 'Tuxedo Lapel'] },
+    { label: 'Lapel Colour (if Tuxedo)', key: 'lapelColor', options: [], isText: true,
+      hint: 'Specify colour for tuxedo lapel (e.g. Black, Ivory, Maroon)' },
+  ],
+  suit: [
+    { label: 'Cut Style',       key: 'cutStyle',     options: ['No Cut', '1 Cut', '2 Cut'] },
+    { label: 'Buttons',         key: 'buttonCount',  options: ['1 Button', '2 Button', '4 Button', '6 Button'] },
+    { label: 'Lapel Style',     key: 'lapelStyle',   options: ['Plain Lapel', 'Tuxedo Lapel'] },
+    { label: 'Lapel Colour (if Tuxedo)', key: 'lapelColor', options: [], isText: true,
+      hint: 'Specify colour for tuxedo lapel' },
+    { label: 'Trouser Finish',  key: 'pantFinish',   options: ['Straight', 'Formal Finish', 'Baggy', 'Boot Cut'] },
+  ],
+  sherwani: [
+    { label: 'Cut Style',         key: 'cutStyle',          options: ['No Cut', '1 Cut', '2 Cut'] },
+    { label: 'Buttons',           key: 'buttonCount',       options: ['1 Button', '2 Button', '4 Button', '6 Button'] },
+    { label: 'Lapel Style',       key: 'lapelStyle',        options: ['Plain Lapel', 'Tuxedo Lapel'] },
+    { label: 'Pocket',            key: 'pocketStyle',       options: ['Pocket', 'No Pocket'] },
+    { label: 'Button Placement',  key: 'buttonPlacement',   options: ['Button Inside', 'Button Outside'] },
+    { label: 'Side Split',        key: 'splitStyle',        options: ['Side Split', 'Standard'] },
+    { label: 'Pyjama Waistband',  key: 'pyjamaElastic',     options: ['Back Elastic', 'No Elastic'],
+      hint: 'Mention if back elastic will be added in pyjama' },
+    { label: 'Pyjama Closure',    key: 'pyjamaModel',       options: ['Button Model', 'Hook Model'] },
+    { label: 'Pyjama Finish',     key: 'pantFinish',        options: ['Straight', 'Formal Finish', 'Baggy', 'Boot Cut'] },
+  ],
+  'indo-western': [
+    { label: 'Cut Style (Outer Coat)', key: 'cutStyle',      options: ['No Cut', '1 Cut', '2 Cut'] },
+    { label: 'Buttons',                key: 'buttonCount',   options: ['1 Button', '2 Button', '4 Button', '6 Button'] },
+    { label: 'Lapel Style',            key: 'lapelStyle',    options: ['Plain Lapel', 'Tuxedo Lapel'] },
+    { label: 'Pocket',                 key: 'pocketStyle',   options: ['Pocket', 'No Pocket'] },
+    { label: 'Button Placement',       key: 'buttonPlacement', options: ['Button Inside', 'Button Outside'] },
+    { label: 'Side Split',             key: 'splitStyle',    options: ['Side Split', 'Standard'] },
+    { label: 'Pyjama Waistband',       key: 'pyjamaElastic', options: ['Back Elastic', 'No Elastic'],
+      hint: 'Back elastic in pyjama waistband' },
+    { label: 'Pyjama Closure',         key: 'pyjamaModel',   options: ['Button Model', 'Hook Model'] },
+    { label: 'Pyjama Finish',          key: 'pantFinish',    options: ['Straight', 'Formal Finish', 'Baggy', 'Boot Cut'] },
+  ],
+};
+
+// ─── MEASUREMENT FIELD & SECTION TYPES ────────────────────────────────────────
 interface MeasurementField {
   key: keyof Measurements;
   label: string;
@@ -55,139 +139,296 @@ interface MeasurementSection {
   fields: MeasurementField[];
 }
 
-// ─── GARMENT-SPECIFIC MEASUREMENT CONFIGS ───────────────────────────────────
+// ─── GARMENT-SPECIFIC MEASUREMENT CONFIGS ─────────────────────────────────────
+// Follows tailor's handwritten specification exactly.
 const GARMENT_MEASUREMENTS: Record<string, MeasurementSection[]> = {
+
+  // ① Shirt — Shirt Length, Hand Length, Chest, Stomach, Hips/Seat, Collar/Neck
   shirt: [
-    { title: 'General (Optional)', fields: [
-      { key: 'height', label: 'Height', placeholder: '175', unit: 'cm', required: false },
-      { key: 'weight', label: 'Weight', placeholder: '72', unit: 'kg', required: false },
-    ]},
-    { title: 'Upper Body', fields: [
-      { key: 'chest',        label: 'Chest Circumference', placeholder: '40', unit: 'in', required: true,  hint: 'Measure fullest part of chest' },
-      { key: 'shoulder',     label: 'Shoulder Width',      placeholder: '17', unit: 'in', required: true,  hint: 'Shoulder seam to seam' },
-      { key: 'sleeveLength', label: 'Sleeve Length',       placeholder: '25', unit: 'in', required: true,  hint: 'Shoulder to wrist' },
-      { key: 'neck',         label: 'Neck Circumference',  placeholder: '15', unit: 'in', required: true,  hint: 'Around base of neck' },
-      { key: 'shirtLength',  label: 'Shirt Length',        placeholder: '30', unit: 'in', required: true,  hint: 'Nape of neck to desired hem' },
-    ]},
-  ],
-  suit: [
     { title: 'General (Optional)', fields: [
       { key: 'height', label: 'Height', placeholder: '175', unit: 'cm', required: false },
       { key: 'weight', label: 'Weight', placeholder: '72',  unit: 'kg', required: false },
     ]},
-    { title: 'Jacket / Upper Body', fields: [
-      { key: 'chest',        label: 'Chest Circumference', placeholder: '40', unit: 'in', required: true,  hint: 'Fullest part of chest' },
-      { key: 'shoulder',     label: 'Shoulder Width',      placeholder: '17', unit: 'in', required: true,  hint: 'Shoulder seam to seam' },
-      { key: 'sleeveLength', label: 'Jacket Sleeve Length',placeholder: '25', unit: 'in', required: true,  hint: 'Shoulder to wrist' },
-      { key: 'neck',         label: 'Neck',                placeholder: '15', unit: 'in', required: false, hint: 'Around base of neck' },
-      { key: 'coatLength',   label: 'Jacket Length',       placeholder: '30', unit: 'in', required: true,  hint: 'Nape to desired jacket hem' },
-    ]},
-    { title: 'Trouser / Lower Body', fields: [
-      { key: 'waist',    label: 'Waist',        placeholder: '34', unit: 'in', required: true,  hint: 'Natural waistline' },
-      { key: 'hips',     label: 'Hips / Seat',  placeholder: '38', unit: 'in', required: true,  hint: 'Fullest part of seat' },
-      { key: 'inseam',   label: 'Inseam Length',placeholder: '30', unit: 'in', required: true,  hint: 'Crotch to ankle' },
-      { key: 'thigh',    label: 'Thigh',        placeholder: '22', unit: 'in', required: false, hint: 'Upper thigh circumference' },
-      { key: 'seatWidth',label: 'Seat Width',   placeholder: '17', unit: 'in', required: false, hint: 'Across widest seat point' },
+    { title: 'Measurements', fields: [
+      { key: 'shirtLength',  label: 'Shirt Length',   placeholder: '30', unit: 'in', required: true,  hint: 'Nape of neck to desired hem' },
+      { key: 'sleeveLength', label: 'Hand Length',    placeholder: '25', unit: 'in', required: true,  hint: 'Shoulder to wrist' },
+      { key: 'chest',        label: 'Chest',          placeholder: '40', unit: 'in', required: true,  hint: 'Full chest circumference' },
+      { key: 'stomach',      label: 'Stomach',        placeholder: '36', unit: 'in', required: true,  hint: 'Around stomach / middle waist' },
+      { key: 'hips',         label: 'Hips / Seat',   placeholder: '38', unit: 'in', required: true,  hint: 'Fullest part of seat' },
+      { key: 'neck',         label: 'Collar / Neck',  placeholder: '15', unit: 'in', required: true,  hint: 'Around base of neck' },
     ]},
   ],
+
+  // ② Pant — Length(custom), Waist, Hips/Seat, Thigh, Knee, Ankle, Rise(Kirtha), Inseam
   pant: [
     { title: 'General (Optional)', fields: [
       { key: 'height', label: 'Height', placeholder: '175', unit: 'cm', required: false },
       { key: 'weight', label: 'Weight', placeholder: '72',  unit: 'kg', required: false },
     ]},
-    { title: 'Lower Body', fields: [
-      { key: 'waist',     label: 'Waist',          placeholder: '34', unit: 'in', required: true,  hint: 'Natural waistline' },
-      { key: 'hips',      label: 'Hips / Seat',    placeholder: '38', unit: 'in', required: true,  hint: 'Fullest part of seat' },
-      { key: 'inseam',    label: 'Inseam (Length)',placeholder: '30', unit: 'in', required: true,  hint: 'Crotch to ankle' },
-      { key: 'thigh',     label: 'Thigh',          placeholder: '22', unit: 'in', required: true,  hint: 'Upper thigh circumference' },
-      { key: 'seatWidth', label: 'Seat Width',     placeholder: '17', unit: 'in', required: false, hint: 'Across widest seat' },
+    { title: 'Measurements', fields: [
+      { key: 'pantLength', label: 'Length (Custom)', placeholder: '42', unit: 'in', required: true,  hint: 'Waist to ankle (outseam)' },
+      { key: 'waist',      label: 'Waist',           placeholder: '34', unit: 'in', required: true,  hint: 'Natural waistline' },
+      { key: 'hips',       label: 'Hips / Seat',     placeholder: '38', unit: 'in', required: true,  hint: 'Fullest part of seat' },
+      { key: 'thigh',      label: 'Thigh',           placeholder: '22', unit: 'in', required: true,  hint: 'Upper thigh circumference' },
+      { key: 'knee',       label: 'Knee',            placeholder: '16', unit: 'in', required: true,  hint: 'Circumference around knee' },
+      { key: 'ankle',      label: 'Ankle',           placeholder: '13', unit: 'in', required: true,  hint: 'Circumference around ankle' },
+      { key: 'rise',       label: 'Rise / Kirtha',   placeholder: '11', unit: 'in', required: true,  hint: 'Waist to crotch (front rise)' },
+      { key: 'inseam',     label: 'Inseam',          placeholder: '30', unit: 'in', required: false, hint: 'Crotch to ankle (inner seam)' },
     ]},
   ],
-  'modi-coat': [
-    { title: 'General (Optional)', fields: [
-      { key: 'height', label: 'Height', placeholder: '175', unit: 'cm', required: false },
-      { key: 'weight', label: 'Weight', placeholder: '72',  unit: 'kg', required: false },
-    ]},
-    { title: 'Upper Body', fields: [
-      { key: 'chest',        label: 'Chest Circumference', placeholder: '40', unit: 'in', required: true,  hint: 'Fullest part of chest' },
-      { key: 'shoulder',     label: 'Shoulder Width',      placeholder: '17', unit: 'in', required: true,  hint: 'Shoulder seam to seam' },
-      { key: 'sleeveLength', label: 'Sleeve Length',       placeholder: '25', unit: 'in', required: true,  hint: 'Shoulder to wrist' },
-      { key: 'neck',         label: 'Neck',                placeholder: '15', unit: 'in', required: false, hint: 'Around base of neck' },
-      { key: 'coatLength',   label: 'Coat Length',         placeholder: '42', unit: 'in', required: true,  hint: 'Nape to desired coat hem' },
-      { key: 'waist',        label: 'Waist',               placeholder: '34', unit: 'in', required: false, hint: 'Natural waistline' },
-    ]},
-  ],
+
+  // ③ Jodhpuri / Blazer — same upper body measurements; trouser same as Pant
   jodhpuri: [
     { title: 'General (Optional)', fields: [
       { key: 'height', label: 'Height', placeholder: '175', unit: 'cm', required: false },
       { key: 'weight', label: 'Weight', placeholder: '72',  unit: 'kg', required: false },
     ]},
-    { title: 'Jacket / Upper Body', fields: [
-      { key: 'chest',        label: 'Chest Circumference', placeholder: '40', unit: 'in', required: true,  hint: 'Fullest part of chest' },
-      { key: 'shoulder',     label: 'Shoulder Width',      placeholder: '17', unit: 'in', required: true,  hint: 'Shoulder seam to seam' },
-      { key: 'sleeveLength', label: 'Sleeve Length',       placeholder: '25', unit: 'in', required: true,  hint: 'Shoulder to wrist' },
-      { key: 'neck',         label: 'Neck',                placeholder: '15', unit: 'in', required: false, hint: 'Around base of neck' },
-      { key: 'coatLength',   label: 'Jacket Length',       placeholder: '30', unit: 'in', required: true,  hint: 'Nape to desired jacket hem' },
+    { title: 'Jacket Measurements', fields: [
+      { key: 'coatLength',   label: 'Length',          placeholder: '30', unit: 'in', required: true,  hint: 'Nape to desired jacket hem' },
+      { key: 'sleeveLength', label: 'Hand Length',      placeholder: '25', unit: 'in', required: true,  hint: 'Shoulder to wrist' },
+      { key: 'chest',        label: 'Chest',            placeholder: '40', unit: 'in', required: true,  hint: 'Full chest circumference' },
+      { key: 'stomach',      label: 'Stomach',          placeholder: '36', unit: 'in', required: true,  hint: 'Around stomach / middle waist' },
+      { key: 'hips',         label: 'Hip / Seat',       placeholder: '38', unit: 'in', required: true,  hint: 'Fullest part of seat' },
+      { key: 'neck',         label: 'Collar / Neck',    placeholder: '15', unit: 'in', required: true,  hint: 'Around base of neck' },
+      { key: 'bicep',        label: 'Bicep',            placeholder: '14', unit: 'in', required: true,  hint: 'Upper arm circumference' },
     ]},
-    { title: 'Trouser / Lower Body', fields: [
-      { key: 'waist',     label: 'Waist',      placeholder: '34', unit: 'in', required: true,  hint: 'Natural waistline' },
-      { key: 'hips',      label: 'Hips',       placeholder: '38', unit: 'in', required: true,  hint: 'Fullest part of seat' },
-      { key: 'seatWidth', label: 'Seat Width', placeholder: '17', unit: 'in', required: true,  hint: 'Across widest seat' },
-      { key: 'inseam',    label: 'Inseam',     placeholder: '30', unit: 'in', required: false, hint: 'Crotch to ankle' },
-      { key: 'thigh',     label: 'Thigh',      placeholder: '22', unit: 'in', required: false, hint: 'Upper thigh circumference' },
-    ]},
-  ],
-  sherwani: [
-    { title: 'General (Optional)', fields: [
-      { key: 'height', label: 'Height', placeholder: '175', unit: 'cm', required: false },
-      { key: 'weight', label: 'Weight', placeholder: '72',  unit: 'kg', required: false },
-    ]},
-    { title: 'Upper Body', fields: [
-      { key: 'chest',        label: 'Chest Circumference',  placeholder: '40', unit: 'in', required: true,  hint: 'Fullest part of chest' },
-      { key: 'shoulder',     label: 'Shoulder Width',       placeholder: '17', unit: 'in', required: true,  hint: 'Shoulder seam to seam' },
-      { key: 'sleeveLength', label: 'Sleeve Length',        placeholder: '25', unit: 'in', required: true,  hint: 'Shoulder to wrist' },
-      { key: 'neck',         label: 'Neck',                 placeholder: '15', unit: 'in', required: false, hint: 'Around base of neck' },
-      { key: 'coatLength',   label: 'Sherwani Length',      placeholder: '48', unit: 'in', required: true,  hint: 'Nape to desired hem (usually below knee)' },
-    ]},
-    { title: 'Lower Body (Churidar / Salwar)', fields: [
-      { key: 'waist',  label: 'Waist',            placeholder: '34', unit: 'in', required: true,  hint: 'Natural waistline' },
-      { key: 'hips',   label: 'Hips',             placeholder: '38', unit: 'in', required: true,  hint: 'Fullest part of seat' },
-      { key: 'inseam', label: 'Churidar Length',  placeholder: '38', unit: 'in', required: false, hint: 'Waist to ankle' },
+    { title: 'Trouser Measurements', fields: [
+      { key: 'pantLength', label: 'Length (Custom)', placeholder: '42', unit: 'in', required: false, hint: 'Waist to ankle (outseam)' },
+      { key: 'waist',      label: 'Waist',           placeholder: '34', unit: 'in', required: false, hint: 'Natural waistline' },
+      { key: 'thigh',      label: 'Thigh',           placeholder: '22', unit: 'in', required: false, hint: 'Upper thigh circumference' },
+      { key: 'knee',       label: 'Knee',            placeholder: '16', unit: 'in', required: false, hint: 'Circumference around knee' },
+      { key: 'ankle',      label: 'Ankle',           placeholder: '13', unit: 'in', required: false, hint: 'Circumference around ankle' },
+      { key: 'rise',       label: 'Rise / Kirtha',   placeholder: '11', unit: 'in', required: false, hint: 'Waist to crotch (front rise)' },
+      { key: 'inseam',     label: 'Inseam',          placeholder: '30', unit: 'in', required: false, hint: 'Crotch to ankle (inner seam)' },
     ]},
   ],
+
+  // Blazer — same upper body as Jodhpuri (no trouser section)
   blazer: [
     { title: 'General (Optional)', fields: [
       { key: 'height', label: 'Height', placeholder: '175', unit: 'cm', required: false },
       { key: 'weight', label: 'Weight', placeholder: '72',  unit: 'kg', required: false },
     ]},
-    { title: 'Upper Body', fields: [
-      { key: 'chest',        label: 'Chest Circumference', placeholder: '40', unit: 'in', required: true,  hint: 'Fullest part of chest' },
-      { key: 'shoulder',     label: 'Shoulder Width',      placeholder: '17', unit: 'in', required: true,  hint: 'Shoulder seam to seam' },
-      { key: 'sleeveLength', label: 'Sleeve Length',       placeholder: '25', unit: 'in', required: true,  hint: 'Shoulder to wrist' },
-      { key: 'coatLength',   label: 'Blazer Length',       placeholder: '30', unit: 'in', required: true,  hint: 'Nape to desired hem' },
-      { key: 'neck',         label: 'Neck',                placeholder: '15', unit: 'in', required: false, hint: 'Around base of neck' },
-      { key: 'waist',        label: 'Waist',               placeholder: '34', unit: 'in', required: false, hint: 'Natural waistline' },
+    { title: 'Measurements', fields: [
+      { key: 'coatLength',   label: 'Length',          placeholder: '30', unit: 'in', required: true,  hint: 'Nape to desired blazer hem' },
+      { key: 'sleeveLength', label: 'Hand Length',      placeholder: '25', unit: 'in', required: true,  hint: 'Shoulder to wrist' },
+      { key: 'chest',        label: 'Chest',            placeholder: '40', unit: 'in', required: true,  hint: 'Full chest circumference' },
+      { key: 'stomach',      label: 'Stomach',          placeholder: '36', unit: 'in', required: true,  hint: 'Around stomach / middle waist' },
+      { key: 'hips',         label: 'Hip / Seat',       placeholder: '38', unit: 'in', required: true,  hint: 'Fullest part of seat' },
+      { key: 'neck',         label: 'Collar / Neck',    placeholder: '15', unit: 'in', required: true,  hint: 'Around base of neck' },
+      { key: 'bicep',        label: 'Bicep',            placeholder: '14', unit: 'in', required: true,  hint: 'Upper arm circumference' },
     ]},
   ],
+
+  // ④ Waist Coat / Modi Coat — Length, Chest, Stomach, Seat/Hip, Collar
+  'modi-coat': [
+    { title: 'General (Optional)', fields: [
+      { key: 'height', label: 'Height', placeholder: '175', unit: 'cm', required: false },
+      { key: 'weight', label: 'Weight', placeholder: '72',  unit: 'kg', required: false },
+    ]},
+    { title: 'Measurements', fields: [
+      { key: 'coatLength', label: 'Length',          placeholder: '42', unit: 'in', required: true,  hint: 'Nape to desired coat hem' },
+      { key: 'chest',      label: 'Chest',           placeholder: '40', unit: 'in', required: true,  hint: 'Full chest circumference' },
+      { key: 'stomach',    label: 'Stomach',         placeholder: '36', unit: 'in', required: true,  hint: 'Around stomach / middle waist' },
+      { key: 'hips',       label: 'Seat / Hip',      placeholder: '38', unit: 'in', required: true,  hint: 'Fullest part of seat' },
+      { key: 'neck',       label: 'Collar',          placeholder: '15', unit: 'in', required: true,  hint: 'Around base of neck' },
+    ]},
+  ],
+
+  // ⑤ Sherwani — Same as Jodhpuri/Blazer upper + Pyjama = same as Pant
+  sherwani: [
+    { title: 'General (Optional)', fields: [
+      { key: 'height', label: 'Height', placeholder: '175', unit: 'cm', required: false },
+      { key: 'weight', label: 'Weight', placeholder: '72',  unit: 'kg', required: false },
+    ]},
+    { title: 'Sherwani Measurements', fields: [
+      { key: 'coatLength',   label: 'Length',          placeholder: '48', unit: 'in', required: true,  hint: 'Nape to hem (usually below knee)' },
+      { key: 'sleeveLength', label: 'Hand Length',      placeholder: '25', unit: 'in', required: true,  hint: 'Shoulder to wrist' },
+      { key: 'chest',        label: 'Chest',            placeholder: '40', unit: 'in', required: true,  hint: 'Full chest circumference' },
+      { key: 'stomach',      label: 'Stomach',          placeholder: '36', unit: 'in', required: true,  hint: 'Around stomach / middle waist' },
+      { key: 'hips',         label: 'Hip / Seat',       placeholder: '38', unit: 'in', required: true,  hint: 'Fullest part of seat' },
+      { key: 'neck',         label: 'Collar / Neck',    placeholder: '15', unit: 'in', required: true,  hint: 'Around base of neck' },
+      { key: 'bicep',        label: 'Bicep',            placeholder: '14', unit: 'in', required: true,  hint: 'Upper arm circumference' },
+    ]},
+    { title: 'Pyjama Measurements', fields: [
+      { key: 'pantLength', label: 'Length (Custom)', placeholder: '42', unit: 'in', required: true,  hint: 'Waist to ankle (outseam)' },
+      { key: 'waist',      label: 'Waist',           placeholder: '34', unit: 'in', required: true,  hint: 'Natural waistline' },
+      { key: 'thigh',      label: 'Thigh',           placeholder: '22', unit: 'in', required: false, hint: 'Upper thigh circumference' },
+      { key: 'knee',       label: 'Knee',            placeholder: '16', unit: 'in', required: false, hint: 'Circumference around knee' },
+      { key: 'ankle',      label: 'Ankle',           placeholder: '13', unit: 'in', required: false, hint: 'Circumference around ankle' },
+      { key: 'rise',       label: 'Rise / Kirtha',   placeholder: '11', unit: 'in', required: false, hint: 'Waist to crotch (front rise)' },
+      { key: 'inseam',     label: 'Inseam',          placeholder: '30', unit: 'in', required: false, hint: 'Crotch to ankle (inner seam)' },
+    ]},
+  ],
+
+  // Kurta — same as Shirt upper + Pyjama same as Pant
   kurta: [
     { title: 'General (Optional)', fields: [
       { key: 'height', label: 'Height', placeholder: '175', unit: 'cm', required: false },
       { key: 'weight', label: 'Weight', placeholder: '72',  unit: 'kg', required: false },
     ]},
-    { title: 'Upper Body', fields: [
-      { key: 'chest',        label: 'Chest Circumference', placeholder: '40', unit: 'in', required: true,  hint: 'Fullest part of chest' },
-      { key: 'shoulder',     label: 'Shoulder Width',      placeholder: '17', unit: 'in', required: true,  hint: 'Shoulder seam to seam' },
-      { key: 'sleeveLength', label: 'Sleeve Length',       placeholder: '25', unit: 'in', required: false, hint: 'Shoulder to wrist (leave blank for 3/4 or sleeveless)' },
-      { key: 'shirtLength',  label: 'Kurta Length',        placeholder: '42', unit: 'in', required: true,  hint: 'Nape of neck to desired hem' },
+    { title: 'Kurta Measurements', fields: [
+      { key: 'shirtLength',  label: 'Kurta Length',   placeholder: '42', unit: 'in', required: true,  hint: 'Nape to desired hem' },
+      { key: 'sleeveLength', label: 'Hand Length',    placeholder: '25', unit: 'in', required: false, hint: 'Shoulder to wrist (leave blank for sleeveless/3-quarter)' },
+      { key: 'chest',        label: 'Chest',          placeholder: '40', unit: 'in', required: true,  hint: 'Full chest circumference' },
+      { key: 'stomach',      label: 'Stomach',        placeholder: '36', unit: 'in', required: true,  hint: 'Around stomach / middle waist' },
+      { key: 'hips',         label: 'Hips / Seat',   placeholder: '38', unit: 'in', required: true,  hint: 'Fullest part of seat' },
+      { key: 'neck',         label: 'Collar / Neck',  placeholder: '15', unit: 'in', required: true,  hint: 'Around base of neck' },
     ]},
-    { title: 'Lower Body – Pajama / Salwar (Optional)', fields: [
-      { key: 'waist',  label: 'Waist',          placeholder: '34', unit: 'in', required: false, hint: 'Natural waistline' },
-      { key: 'inseam', label: 'Pajama Length',  placeholder: '38', unit: 'in', required: false, hint: 'Waist to ankle' },
+    { title: 'Pyjama / Salwar Measurements (Optional)', fields: [
+      { key: 'pantLength', label: 'Length (Custom)', placeholder: '42', unit: 'in', required: false, hint: 'Waist to ankle' },
+      { key: 'waist',      label: 'Waist',           placeholder: '34', unit: 'in', required: false, hint: 'Natural waistline' },
+      { key: 'thigh',      label: 'Thigh',           placeholder: '22', unit: 'in', required: false, hint: 'Upper thigh circumference' },
+      { key: 'knee',       label: 'Knee',            placeholder: '16', unit: 'in', required: false, hint: 'Circumference around knee' },
+      { key: 'ankle',      label: 'Ankle',           placeholder: '13', unit: 'in', required: false, hint: 'Circumference around ankle' },
+      { key: 'rise',       label: 'Rise / Kirtha',   placeholder: '11', unit: 'in', required: false, hint: 'Waist to crotch (front rise)' },
+      { key: 'inseam',     label: 'Inseam',          placeholder: '30', unit: 'in', required: false, hint: 'Crotch to ankle (inner seam)' },
+    ]},
+  ],
+
+  // Suit — Jacket (same as Jodhpuri) + Trouser (same as Pant)
+  suit: [
+    { title: 'General (Optional)', fields: [
+      { key: 'height', label: 'Height', placeholder: '175', unit: 'cm', required: false },
+      { key: 'weight', label: 'Weight', placeholder: '72',  unit: 'kg', required: false },
+    ]},
+    { title: 'Jacket Measurements', fields: [
+      { key: 'coatLength',   label: 'Length',          placeholder: '30', unit: 'in', required: true,  hint: 'Nape to desired jacket hem' },
+      { key: 'sleeveLength', label: 'Hand Length',      placeholder: '25', unit: 'in', required: true,  hint: 'Shoulder to wrist' },
+      { key: 'chest',        label: 'Chest',            placeholder: '40', unit: 'in', required: true,  hint: 'Full chest circumference' },
+      { key: 'stomach',      label: 'Stomach',          placeholder: '36', unit: 'in', required: true,  hint: 'Around stomach / middle waist' },
+      { key: 'hips',         label: 'Hip / Seat',       placeholder: '38', unit: 'in', required: true,  hint: 'Fullest part of seat' },
+      { key: 'neck',         label: 'Collar / Neck',    placeholder: '15', unit: 'in', required: true,  hint: 'Around base of neck' },
+      { key: 'bicep',        label: 'Bicep',            placeholder: '14', unit: 'in', required: false, hint: 'Upper arm circumference' },
+    ]},
+    { title: 'Trouser Measurements', fields: [
+      { key: 'pantLength', label: 'Length (Custom)', placeholder: '42', unit: 'in', required: true,  hint: 'Waist to ankle (outseam)' },
+      { key: 'waist',      label: 'Waist',           placeholder: '34', unit: 'in', required: true,  hint: 'Natural waistline' },
+      { key: 'thigh',      label: 'Thigh',           placeholder: '22', unit: 'in', required: false, hint: 'Upper thigh circumference' },
+      { key: 'knee',       label: 'Knee',            placeholder: '16', unit: 'in', required: false, hint: 'Circumference around knee' },
+      { key: 'ankle',      label: 'Ankle',           placeholder: '13', unit: 'in', required: false, hint: 'Circumference around ankle' },
+      { key: 'rise',       label: 'Rise / Kirtha',   placeholder: '11', unit: 'in', required: false, hint: 'Waist to crotch (front rise)' },
+      { key: 'inseam',     label: 'Inseam',          placeholder: '30', unit: 'in', required: false, hint: 'Crotch to ankle (inner seam)' },
+    ]},
+  ],
+
+  // ⑥ Indo Western — 3 articles: Outside Open Coat + Kurta + Pyjama
+  'indo-western': [
+    { title: 'General (Optional)', fields: [
+      { key: 'height', label: 'Height', placeholder: '175', unit: 'cm', required: false },
+      { key: 'weight', label: 'Weight', placeholder: '72',  unit: 'kg', required: false },
+    ]},
+    { title: 'Outside Open Coat (same as Sherwani)', fields: [
+      { key: 'coatLength',   label: 'Coat Length',     placeholder: '48', unit: 'in', required: true,  hint: 'Nape to hem (usually below knee)' },
+      { key: 'sleeveLength', label: 'Hand Length',      placeholder: '25', unit: 'in', required: true,  hint: 'Shoulder to wrist' },
+      { key: 'chest',        label: 'Chest',            placeholder: '40', unit: 'in', required: true,  hint: 'Full chest circumference' },
+      { key: 'stomach',      label: 'Stomach',          placeholder: '36', unit: 'in', required: true,  hint: 'Around stomach / middle waist' },
+      { key: 'hips',         label: 'Hip / Seat',       placeholder: '38', unit: 'in', required: true,  hint: 'Fullest part of seat' },
+      { key: 'neck',         label: 'Collar / Neck',    placeholder: '15', unit: 'in', required: true,  hint: 'Around base of neck' },
+      { key: 'bicep',        label: 'Bicep',            placeholder: '14', unit: 'in', required: false, hint: 'Upper arm circumference' },
+    ]},
+    { title: 'Kurta (same as Shirt)', fields: [
+      { key: 'shirtLength', label: 'Kurta Length', placeholder: '36', unit: 'in', required: true,
+        hint: 'Nape to kurta hem (inner garment — shorter than coat)' },
+    ]},
+    { title: 'Pyjama (same as Pant)', fields: [
+      { key: 'pantLength', label: 'Length (Custom)', placeholder: '42', unit: 'in', required: true,  hint: 'Waist to ankle (outseam)' },
+      { key: 'waist',      label: 'Waist',           placeholder: '34', unit: 'in', required: true,  hint: 'Natural waistline' },
+      { key: 'thigh',      label: 'Thigh',           placeholder: '22', unit: 'in', required: false, hint: 'Upper thigh circumference' },
+      { key: 'knee',       label: 'Knee',            placeholder: '16', unit: 'in', required: false, hint: 'Circumference around knee' },
+      { key: 'ankle',      label: 'Ankle',           placeholder: '13', unit: 'in', required: false, hint: 'Circumference around ankle' },
+      { key: 'rise',       label: 'Rise / Kirtha',   placeholder: '11', unit: 'in', required: false, hint: 'Waist to crotch (front rise)' },
+      { key: 'inseam',     label: 'Inseam',          placeholder: '30', unit: 'in', required: false, hint: 'Crotch to ankle (inner seam)' },
     ]},
   ],
 };
 
-// ─── UPLOAD TYPES ────────────────────────────────────────────────────────────
+// ─── MEASUREMENT VISUAL GUIDES ───────────────────────────────────────────────
+interface GuideData {
+  title: string;
+  image: string;
+  description: string;
+}
+
+const MEASUREMENT_GUIDES: Record<string, GuideData> = {
+  chest: {
+    title: 'Chest Circumference',
+    image: '/images/measurements/measure_chest.png.jpeg',
+    description: 'Stand straight with arms relaxed at your sides. Wrap the measuring tape horizontally around the fullest part of your chest, passing under the armpits. Keep the tape flat and snug, but not too tight. Do not include your arms.'
+  },
+  stomach: {
+    title: 'Stomach / Abdomen',
+    image: '/images/measurements/measure_stomach.png.jpeg',
+    description: 'Stand naturally without sucking in. Wrap the tape horizontally around your stomach/abdomen area (typically at the belly button level). Keep the tape parallel to the floor.'
+  },
+  neck: {
+    title: 'Collar / Neck',
+    image: '/images/measurements/measure_neck.png.jpeg',
+    description: 'Wrap the measuring tape around the base of your neck where a shirt collar would sit. Keep the tape snug but comfortable; place one finger between the tape and your neck for breathing room.'
+  },
+  sleeveLength: {
+    title: 'Hand / Sleeve Length',
+    image: '/images/measurements/measure_sleeve.png.jpeg',
+    description: 'Extend your arm straight out to the side horizontally. Measure from the shoulder seam point, straight along the outside top of the arm, down to your wrist bone.'
+  },
+  shirtLength: {
+    title: 'Shirt Length',
+    image: '/images/measurements/measure_length.png.jpeg',
+    description: 'Measure vertically from the nape of your neck (the bony bump at the base of your neck) straight down your spine to the desired length (hips for shirts).'
+  },
+  coatLength: {
+    title: 'Coat / Blazer Length',
+    image: '/images/measurements/measure_length.png.jpeg',
+    description: 'Measure vertically from the nape of your neck (the bony bump at the base of your neck) straight down your spine to the desired length (mid-thigh for blazers).'
+  },
+  pantLength: {
+    title: 'Trouser / Pant Length',
+    image: '/images/measurements/measure_pant_length.png.jpeg',
+    description: 'Measure vertically from your natural waistline down the outside of your leg (outseam) to your ankle bone or desired trouser length.'
+  },
+  waist: {
+    title: 'Waist Circumference',
+    image: '/images/measurements/measure_waist.png.jpeg',
+    description: 'Stand straight and wrap the measuring tape horizontally around your natural waistline (usually right above the belly button, where your trousers sit). Keep it snug but comfortable.'
+  },
+  hips: {
+    title: 'Hips / Seat',
+    image: '/images/measurements/measure_hips.png.jpeg',
+    description: 'Stand with your feet together. Wrap the measuring tape horizontally around the fullest part of your hips and seat.'
+  },
+  thigh: {
+    title: 'Thigh Circumference',
+    image: '/images/measurements/measure_thigh.png.jpeg',
+    description: 'Wrap the tape horizontally around the fullest part of your upper thigh, just below the crotch.'
+  },
+  knee: {
+    title: 'Knee Circumference',
+    image: '/images/measurements/measure_knee.png.jpeg',
+    description: 'Wrap the tape horizontally around your knee joint while standing straight.'
+  },
+  ankle: {
+    title: 'Ankle / Bottom Circumference',
+    image: '/images/measurements/measure_ankle.png.jpeg',
+    description: 'Wrap the tape horizontally around your ankle bone, where the trouser cuff will sit.'
+  },
+  rise: {
+    title: 'Rise / Kirtha',
+    image: '/images/measurements/measure_rise.png.jpeg',
+    description: 'Measure from the front center of your waistband, down through your crotch, and up to the back center of your waistband to find the rise / kirtha.'
+  },
+  inseam: {
+    title: 'Inseam Length',
+    image: '/images/measurements/measure_inseam.png.jpeg',
+    description: 'Measure the inside of the leg from the crotch down to the ankle bone or desired trouser length.'
+  },
+  bicep: {
+    title: 'Bicep Circumference',
+    image: '/images/measurements/measure_bicep.png.jpeg',
+    description: 'Wrap the tape horizontally around the widest part of your upper arm bicep while holding your arm relaxed.'
+  }
+};
+
+// ─── UPLOAD TYPES ─────────────────────────────────────────────────────────────
 interface UploadedImage {
   label: string;
   file: File | null;
@@ -201,7 +442,7 @@ const WHATSAPP_NUMBER = '919030727629';
 const CLOUDINARY_UPLOAD_PRESET = 'madhu_textorium';
 const CLOUDINARY_CLOUD_NAME = 'dummycloud';
 
-// ─── INNER PAGE COMPONENT ────────────────────────────────────────────────────
+// ─── INNER PAGE COMPONENT ─────────────────────────────────────────────────────
 function CustomizePageInner() {
   const searchParams = useSearchParams();
   const rawCategory = searchParams.get('category') || '';
@@ -216,6 +457,7 @@ function CustomizePageInner() {
       sherwani: 'sherwani',
       blazers: 'blazer', blazer: 'blazer',
       kurta: 'kurta', 'kurta-pajama': 'kurta',
+      'indo-western': 'indo-western',
     };
     return map[cat.toLowerCase()] || cat;
   };
@@ -223,26 +465,35 @@ function CustomizePageInner() {
   const defaultGarment = rawCategory ? categoryToGarmentId(rawCategory) : '';
   const initialStep = defaultGarment ? 2 : 1;
 
-  const [step, setStep] = useState(initialStep);
+  const [step, setStep]       = useState(initialStep);
   const [garment, setGarment] = useState(defaultGarment);
-  const [fabric, setFabric] = useState('');
-  const [color, setColor] = useState('');
+  const [fabric, setFabric]   = useState('');
+  const [color, setColor]     = useState('');
+
   const [measurements, setMeasurements] = useState<Measurements>({
     height: '', weight: '',
-    chest: '', shoulder: '', sleeveLength: '', neck: '',
-    waist: '', hips: '', inseam: '', thigh: '',
-    shirtLength: '', coatLength: '', seatWidth: '',
+    chest: '', stomach: '', shoulder: '', sleeveLength: '', neck: '', bicep: '',
+    shirtLength: '', coatLength: '',
+    waist: '', hips: '', thigh: '', knee: '', ankle: '', rise: '', inseam: '',
+    pantLength: '', seatWidth: '',
   });
+
+  const [styleOptions, setStyleOptions] = useState<StyleOptions>({
+    pantFinish: '', cutStyle: '', buttonCount: '', lapelStyle: '', lapelColor: '',
+    pocketStyle: '', buttonPlacement: '', splitStyle: '', pyjamaModel: '', pyjamaElastic: '',
+  });
+
   const [images, setImages] = useState<UploadedImage[]>([
     { label: 'Front View', file: null, preview: null, url: null, uploading: false, error: null },
     { label: 'Back View',  file: null, preview: null, url: null, uploading: false, error: null },
     { label: 'Side View',  file: null, preview: null, url: null, uploading: false, error: null },
   ]);
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes]               = useState('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [uploading, setUploading] = useState(false);
-  const [toast, setToast] = useState<{ message: string; fields: string[] } | null>(null);
+  const [uploading, setUploading]       = useState(false);
+  const [toast, setToast]               = useState<{ message: string; fields: string[] } | null>(null);
+  const [activeField, setActiveField]   = useState<string | null>(null);
 
   const fileRefs = [
     useRef<HTMLInputElement>(null),
@@ -250,13 +501,25 @@ function CustomizePageInner() {
     useRef<HTMLInputElement>(null),
   ];
 
-  // ── Dismiss toast on timeout ─────────────────────────────────────────────
+  // ── Dismiss toast on timeout ────────────────────────────────────────────────
   const showToast = useCallback((message: string, fields: string[]) => {
     setToast({ message, fields });
     setTimeout(() => setToast(null), 5000);
   }, []);
 
-  // ── Get required fields for current garment ──────────────────────────────
+  // ── Measurement + style option handlers ────────────────────────────────────
+  const handleMeasurement = (key: keyof Measurements, value: string) => {
+    setMeasurements(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleStyleOption = (key: keyof StyleOptions, value: string) => {
+    setStyleOptions(prev => ({
+      ...prev,
+      [key]: prev[key] === value ? '' : value, // toggle off if same chip clicked
+    }));
+  };
+
+  // ── Required field helpers ──────────────────────────────────────────────────
   const getRequiredFields = (): MeasurementField[] => {
     if (!garment) return [];
     const sections = GARMENT_MEASUREMENTS[garment] || [];
@@ -267,12 +530,7 @@ function CustomizePageInner() {
     return getRequiredFields().filter(f => !measurements[f.key]);
   };
 
-  // ── Measurement handler ──────────────────────────────────────────────────
-  const handleMeasurement = (key: keyof Measurements, value: string) => {
-    setMeasurements(prev => ({ ...prev, [key]: value }));
-  };
-
-  // ── Image handlers ───────────────────────────────────────────────────────
+  // ── Image handlers ──────────────────────────────────────────────────────────
   const handleImageSelect = (index: number, file: File) => {
     const preview = URL.createObjectURL(file);
     setImages(prev => {
@@ -315,10 +573,10 @@ function CustomizePageInner() {
     setUploading(false);
   };
 
-  // ── Build WhatsApp message ───────────────────────────────────────────────
+  // ── Build WhatsApp message ──────────────────────────────────────────────────
   const buildWhatsAppMessage = (): string => {
     const selectedGarment = GARMENT_TYPES.find(g => g.id === garment);
-    const missingFields = getMissingRequiredFields();
+    const missingFields   = getMissingRequiredFields();
 
     let msg = `✂️ *CUSTOM ORDER ENQUIRY*\n`;
     msg += `*Madhu Textorium, Visakhapatnam*\n\n`;
@@ -330,6 +588,17 @@ function CustomizePageInner() {
     if (fabric) msg += `🧵 *Fabric:* ${fabric}\n`;
     if (color)  msg += `🎨 *Color:* ${color}\n\n`;
 
+    // Style Options
+    const activeStyleOptions = GARMENT_STYLE_OPTIONS[garment] || [];
+    const filledStyleOptions = activeStyleOptions.filter(g => styleOptions[g.key]);
+    if (filledStyleOptions.length > 0) {
+      msg += `✂️ *STYLE PREFERENCES:*\n━━━━━━━━━━━━━━━━━━━━\n`;
+      filledStyleOptions.forEach(g => {
+        msg += `• ${g.label}: ${styleOptions[g.key]}\n`;
+      });
+      msg += `\n`;
+    }
+
     // Measurements
     const sections = GARMENT_MEASUREMENTS[garment] || [];
     msg += `📏 *MEASUREMENTS:*\n━━━━━━━━━━━━━━━━━━━━\n`;
@@ -338,7 +607,7 @@ function CustomizePageInner() {
       if (filled.length > 0) {
         msg += `\n*${section.title}:*\n`;
         filled.forEach(f => {
-          const val = measurements[f.key];
+          const val  = measurements[f.key];
           const unit = f.unit === 'cm' ? ' cm' : f.unit === 'kg' ? ' kg' : '"';
           msg += `• ${f.label}: ${val}${unit}\n`;
         });
@@ -380,7 +649,7 @@ function CustomizePageInner() {
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, '_blank');
   };
 
-  // ── Validation & navigation ──────────────────────────────────────────────
+  // ── Validation & navigation ─────────────────────────────────────────────────
   const handleProceedFromMeasurements = () => {
     const missing = getMissingRequiredFields();
     if (missing.length > 0) {
@@ -393,9 +662,10 @@ function CustomizePageInner() {
     setStep(3);
   };
 
-  const canProceedStep1 = garment !== '';
-  const isStep3Complete = images.some(img => img.file !== null);
-  const activeSections = garment ? (GARMENT_MEASUREMENTS[garment] || []) : [];
+  const canProceedStep1   = garment !== '';
+  const isStep3Complete   = images.some(img => img.file !== null);
+  const activeSections    = garment ? (GARMENT_MEASUREMENTS[garment] || []) : [];
+  const activeStyleGroups = garment ? (GARMENT_STYLE_OPTIONS[garment] || []) : [];
 
   const steps = ['Garment', 'Measurements', 'Photos', 'Details', 'Review'];
 
@@ -426,7 +696,7 @@ function CustomizePageInner() {
         <div className={styles.topBarRight} />
       </div>
 
-      {/* Step Progress — NOT sticky */}
+      {/* Step Progress */}
       <div className={styles.stepProgress}>
         <div className="container">
           <div className={styles.stepBar}>
@@ -523,32 +793,120 @@ function CustomizePageInner() {
               </span>
             </div>
 
+            {/* ── Measurement fields & integrated guides ── */}
             <div className={styles.measureGrid}>
-              {activeSections.map((section) => (
-                <div key={section.title} className={styles.measureSection}>
-                  <h3 className={styles.measureSectionTitle}>{section.title}</h3>
-                  <div className={styles.measureFields}>
-                    {section.fields.map(field => (
-                      <div key={field.key} className="form-group">
-                        <label className="form-label">
-                          {field.label}
-                          {field.required && <span className={styles.reqStar}> *</span>}
-                          <span className={styles.unitBadge}>{field.unit}</span>
-                        </label>
+              {activeSections.map((section) => {
+                // Find which guide should be displayed in this section.
+                // If a field in this section is focused, show it. Otherwise, default to the first field of the section.
+                const sectionGuide = (() => {
+                  const hasActiveField = section.fields.some(f => f.key === activeField);
+                  if (hasActiveField && activeField) {
+                    return MEASUREMENT_GUIDES[activeField];
+                  }
+                  if (section.fields.length > 0) {
+                    return MEASUREMENT_GUIDES[section.fields[0].key];
+                  }
+                  return null;
+                })();
+
+                return (
+                  <div key={section.title} className={styles.measureSection}>
+                    <h3 className={styles.measureSectionTitle}>{section.title}</h3>
+
+                    {/* Integrated Section Guide Header */}
+                    {sectionGuide && (
+                      <div className={styles.sectionGuideHeader}>
+                        <div className={styles.sectionGuideImageWrap}>
+                          <Image
+                            src={sectionGuide.image}
+                            alt={sectionGuide.title}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 240px"
+                            style={{ objectFit: 'contain' }}
+                            priority
+                          />
+                        </div>
+                        <div className={styles.sectionGuideContent}>
+                          <span className={styles.sectionGuideLabel}>{sectionGuide.title} Guide</span>
+                          <p className={styles.sectionGuideText}>{sectionGuide.description}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className={styles.measureFields}>
+                      {section.fields.map(field => {
+                        const isFocused = activeField === field.key;
+                        return (
+                          <div key={field.key} className="form-group">
+                            <label className="form-label">
+                              {field.label}
+                              {field.required && <span className={styles.reqStar}> *</span>}
+                              <span className={styles.unitBadge}>{field.unit}</span>
+                            </label>
+                            <input
+                              className={`form-input ${isFocused ? styles.formInputFocused : ''}`}
+                              type="number"
+                              placeholder={`e.g. ${field.placeholder}`}
+                              value={measurements[field.key]}
+                              onChange={e => handleMeasurement(field.key, e.target.value)}
+                              onFocus={() => setActiveField(field.key)}
+                            />
+                            {field.hint && <p className={styles.fieldHint}>{field.hint}</p>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* ── Style Options (chip selectors) ── */}
+            {activeStyleGroups.length > 0 && (
+              <div className={styles.styleOptionsSection}>
+                <h3 className={styles.styleOptionsSectionTitle}>
+                  <FiScissors size={16} style={{ color: 'var(--accent)' }} />
+                  Style Preferences
+                </h3>
+                <p className={styles.styleOptionsHint}>
+                  Select your preferred style options. These will be shared with the tailor.
+                </p>
+                <div className={styles.styleOptionsGrid}>
+                  {activeStyleGroups.map(group => (
+                    <div key={group.key} className={styles.styleOptionGroup}>
+                      <label className={styles.styleOptionLabel}>{group.label}</label>
+                      {group.hint && <p className={styles.fieldHint}>{group.hint}</p>}
+
+                      {group.isText ? (
+                        /* Free-text input for lapel colour etc. */
                         <input
                           className="form-input"
-                          type="number"
-                          placeholder={`e.g. ${field.placeholder}`}
-                          value={measurements[field.key]}
-                          onChange={e => handleMeasurement(field.key, e.target.value)}
+                          type="text"
+                          placeholder="e.g. Black, Ivory, Maroon..."
+                          value={styleOptions[group.key]}
+                          onChange={e => setStyleOptions(prev => ({ ...prev, [group.key]: e.target.value }))}
                         />
-                        {field.hint && <p className={styles.fieldHint}>{field.hint}</p>}
-                      </div>
-                    ))}
-                  </div>
+                      ) : (
+                        /* Chip selector */
+                        <div className={styles.styleChipRow}>
+                          {group.options.map(opt => (
+                            <button
+                              key={opt}
+                              type="button"
+                              className={`${styles.styleChip} ${styleOptions[group.key] === opt ? styles.styleChipActive : ''}`}
+                              onClick={() => handleStyleOption(group.key, opt)}
+                            >
+                              {styleOptions[group.key] === opt && <FiCheck size={11} />}
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
 
             <div className={styles.stepNav}>
               <button className="btn btn-outline" onClick={() => setStep(1)}>
@@ -648,7 +1006,7 @@ function CustomizePageInner() {
         {step === 4 && (
           <div className={styles.stepContent}>
             <div className={styles.stepHeader}>
-              <h2 className={styles.stepTitle}>Fabric, Style & Details</h2>
+              <h2 className={styles.stepTitle}>Fabric, Style &amp; Details</h2>
               <p className={styles.stepSubtitle}>Help us understand your preferences to craft the perfect garment</p>
             </div>
 
@@ -704,7 +1062,7 @@ function CustomizePageInner() {
         {step === 5 && (
           <div className={styles.stepContent}>
             <div className={styles.stepHeader}>
-              <h2 className={styles.stepTitle}>Review & Send</h2>
+              <h2 className={styles.stepTitle}>Review &amp; Send</h2>
               <p className={styles.stepSubtitle}>Review your order details below, then send to WhatsApp</p>
             </div>
 
@@ -732,15 +1090,40 @@ function CustomizePageInner() {
                 </div>
               )}
 
+              {/* Style options review */}
+              {(GARMENT_STYLE_OPTIONS[garment] || []).some(g => styleOptions[g.key]) && (
+                <div className={styles.reviewSection}>
+                  <h3 className={styles.reviewSectionTitle}>Style Preferences</h3>
+                  {(GARMENT_STYLE_OPTIONS[garment] || [])
+                    .filter(g => styleOptions[g.key])
+                    .map(g => (
+                      <p key={g.key} className={styles.reviewValue}>
+                        {g.label}: <strong>{styleOptions[g.key]}</strong>
+                      </p>
+                    ))}
+                </div>
+              )}
+
               <div className={styles.reviewSection}>
                 <h3 className={styles.reviewSectionTitle}>Measurements</h3>
                 <div className={styles.reviewMeasures}>
-                  {Object.entries(measurements).filter(([, v]) => v !== '').map(([k, v]) => (
-                    <div key={k} className={styles.reviewMeasureItem}>
-                      <span>{k.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}</span>
-                      <span className={styles.reviewMeasureVal}>{v}&quot;</span>
-                    </div>
-                  ))}
+                  {activeSections.map(section => {
+                    const filled = section.fields.filter(f => measurements[f.key]);
+                    if (filled.length === 0) return null;
+                    return (
+                      <div key={section.title}>
+                        <p className={styles.reviewMeasureSectionLabel}>{section.title}</p>
+                        {filled.map(f => (
+                          <div key={f.key} className={styles.reviewMeasureItem}>
+                            <span>{f.label}</span>
+                            <span className={styles.reviewMeasureVal}>
+                              {measurements[f.key]}{f.unit === 'cm' ? ' cm' : f.unit === 'kg' ? ' kg' : '"'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
                   {Object.values(measurements).every(v => v === '') && (
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No measurements entered</p>
                   )}
@@ -799,7 +1182,7 @@ function CustomizePageInner() {
                 {uploading ? (
                   <><div className={styles.spinner} /> Uploading Photos...</>
                 ) : (
-                  <><FaWhatsapp size={22} /> Send to WhatsApp Now</>
+                  <><FaWhatsapp size={20} /> Send to WhatsApp</>
                 )}
               </button>
             </div>
@@ -810,13 +1193,14 @@ function CustomizePageInner() {
   );
 }
 
+// ─── PAGE WRAPPER (required for useSearchParams) ──────────────────────────────
 export default function CustomizePage() {
   return (
     <Suspense fallback={
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--black)' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
-          <FiScissors size={40} style={{ color: 'var(--accent)' }} />
-          <p style={{ color: 'var(--text-muted)', marginTop: 16 }}>Loading...</p>
+          <FiScissors size={32} style={{ color: 'var(--accent)', marginBottom: 16 }} />
+          <p>Loading customization form...</p>
         </div>
       </div>
     }>

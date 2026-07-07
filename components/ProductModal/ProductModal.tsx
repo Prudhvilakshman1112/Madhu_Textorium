@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FiX, FiScissors, FiCheck } from 'react-icons/fi';
@@ -8,7 +8,14 @@ import { FaWhatsapp } from 'react-icons/fa';
 import { MdColorLens, MdStraighten, MdStar } from 'react-icons/md';
 import { GiSewingNeedle, GiClothes } from 'react-icons/gi';
 import { useCart } from '@/context/CartContext';
+import FabricLightbox from '@/components/FabricLightbox/FabricLightbox';
 import styles from './ProductModal.module.css';
+
+export interface FabricSwatch {
+  id: string;
+  name: string;
+  image: string;
+}
 
 export interface Product {
   id: string;
@@ -22,6 +29,8 @@ export interface Product {
   fabrics?: string[];
   features?: string[];
   isTopSeller?: boolean;
+  fabricSwatches?: FabricSwatch[];
+  sketchImage?: string;
 }
 
 interface Props {
@@ -32,19 +41,18 @@ interface Props {
 const WHATSAPP_NUMBER = '919030727629';
 
 const DEFAULT_COLORS: Record<string, string[]> = {
-  'Suits': ['Charcoal Grey', 'Navy Blue', 'Black', 'Ivory White', 'Dark Brown', 'Midnight Blue'],
-  'Shirts': ['White', 'Sky Blue', 'Light Grey', 'Cream', 'Pale Yellow', 'Mint Green', 'Pink'],
-  'Pants': ['Charcoal', 'Navy', 'Black', 'Beige', 'Olive', 'Grey Melange'],
+  'Suits':     ['Charcoal Grey', 'Navy Blue', 'Black', 'Ivory White', 'Dark Brown', 'Midnight Blue'],
+  'Shirts':    ['White', 'Sky Blue', 'Light Grey', 'Cream', 'Pale Yellow', 'Mint Green', 'Pink'],
+  'Pants':     ['Charcoal', 'Navy', 'Black', 'Beige', 'Olive', 'Grey Melange'],
   'Modi Coat': ['Navy Blue', 'Black', 'Cream', 'Dark Green', 'Wine Red', 'Royal Blue'],
-  'Jodhpuri': ['Maroon', 'Navy Blue', 'Royal Blue', 'Champagne', 'Black', 'Burgundy'],
-  'Sherwani': ['Ivory Gold', 'Royal Maroon', 'Champagne', 'Deep Green', 'Off-White', 'Royal Blue'],
-  'Blazers': ['Navy', 'Charcoal', 'Black', 'Camel', 'Burgundy', 'Royal Blue'],
-  'Kurta': ['White', 'Ivory', 'Sky Blue', 'Cream', 'Sage Green', 'Dusty Pink'],
+  'Jodhpuri':  ['Maroon', 'Navy Blue', 'Royal Blue', 'Champagne', 'Black', 'Burgundy'],
+  'Sherwani':  ['Ivory Gold', 'Royal Maroon', 'Champagne', 'Deep Green', 'Off-White', 'Royal Blue'],
+  'Blazers':   ['Navy', 'Charcoal', 'Black', 'Camel', 'Burgundy', 'Royal Blue'],
+  'Kurta':     ['White', 'Ivory', 'Sky Blue', 'Cream', 'Sage Green', 'Dusty Pink'],
 };
 
-const DEFAULT_FABRICS = ['Premium Wool', 'Cotton Blend', 'Poly-Viscose', 'Pure Cotton', 'Linen', 'Silk Blend'];
-
-const DEFAULT_FEATURES = [
+const DEFAULT_FABRICS   = ['Premium Wool', 'Cotton Blend', 'Poly-Viscose', 'Pure Cotton', 'Linen', 'Silk Blend'];
+const DEFAULT_FEATURES  = [
   'Custom tailor measurements',
   'Premium quality stitching',
   'Choice of lining & interlining',
@@ -54,27 +62,110 @@ const DEFAULT_FEATURES = [
 
 export default function ProductModal({ product, onClose }: Props) {
   const { addItem } = useCart();
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; });
 
+  /* Which swatch is open in the lightbox (null = lightbox closed) */
+  const [lightboxSwatch, setLightboxSwatch] = useState<FabricSwatch | null>(null);
+
+  /* Reset lightbox whenever the product changes */
   useEffect(() => {
-    if (product) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    setLightboxSwatch(null);
+  }, [product?.id]);
+
+  /* Body scroll lock */
+  useEffect(() => {
+    document.body.style.overflow = product ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [product]);
 
+  /* ── Mobile back-button support via History API ──────────────────────────
+   * DESIGN
+   * ──────
+   * We push ONE history entry when the modal opens.  The popstate handler
+   * decides what to close (lightbox first, then modal).
+   *
+   * If the lightbox is closed via the back button we MUST re-push one entry
+   * so pressing back again still closes the modal (not the whole page).  We
+   * track the running push count so that closing via the ✕ button always
+   * cleans up exactly the right number of entries with history.go(-count).
+   *
+   * Paths
+   * ─────
+   *  Back → (lightbox open)  → close lightbox, re-push 1, count stays same
+   *  Back → (modal only)     → close modal, mark closedByBack, count → 0
+   *  ✕ button → (any)        → cleanup calls history.go(-count) to clean stack
+   */
+  const historyPushCountRef = useRef(0);
+  const closedByBackRef     = useRef(false);
+
   useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    if (!product) return;
+
+    closedByBackRef.current = false;
+    window.history.pushState({ layer: 'modal' }, '');
+    historyPushCountRef.current = 1;
+
+    const handlePop = () => {
+      setLightboxSwatch(current => {
+        if (current !== null) {
+          /* Lightbox was open.
+           * Popstate consumed 1 entry (count: N → N-1).
+           * Re-push 1 so the modal still has a back-button slot (count: N-1 → N).
+           * Net effect: count unchanged, lightbox closed. */
+          setTimeout(() => {
+            window.history.pushState({ layer: 'modal' }, '');
+          }, 0);
+          return null;
+        }
+
+        /* Only modal was open – close it.
+         * Popstate consumed the last entry; nothing left to clean up. */
+        closedByBackRef.current = true;
+        onCloseRef.current();
+        return null;
+      });
+    };
+
+    window.addEventListener('popstate', handlePop);
+    return () => {
+      window.removeEventListener('popstate', handlePop);
+      /* If the modal was closed by the ✕ button (not the back button),
+       * we still have historyPushCountRef.current entries in the stack.
+       * Go back by that many to leave the history clean. */
+      if (!closedByBackRef.current && historyPushCountRef.current > 0) {
+        window.history.go(-historyPushCountRef.current);
+        historyPushCountRef.current = 0;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id]);
+
+  /* ── Do NOT push a separate entry for the lightbox. ──────────────────────
+   * The single modal entry handles both layers.  The re-push inside handlePop
+   * above restores the modal's slot after the lightbox is back-navigated. */
+
+  const handleKey = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      if (lightboxSwatch) {
+        setLightboxSwatch(null);   // close lightbox first
+      } else {
+        onClose();                 // then close modal
+      }
+    }
+  }, [onClose, lightboxSwatch]);
+
+  useEffect(() => {
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [onClose]);
+  }, [handleKey]);
 
   if (!product) return null;
 
-  const colors = product.colors || DEFAULT_COLORS[product.category] || ['Navy Blue', 'Black', 'Charcoal'];
-  const fabrics = product.fabrics || DEFAULT_FABRICS;
-  const features = product.features || DEFAULT_FEATURES;
+  const colors    = product.colors   || DEFAULT_COLORS[product.category] || ['Navy Blue', 'Black', 'Charcoal'];
+  const fabrics   = product.fabrics  || DEFAULT_FABRICS;
+  const features  = product.features || DEFAULT_FEATURES;
+  const swatches  = product.fabricSwatches || [];
 
   const waMsg = encodeURIComponent(
     `Hello Madhu Textorium! I'm interested in the *${product.name}* (${product.category}).\n\nCould you please share more details, fabric options, and pricing?\n\nThank you.`
@@ -87,15 +178,18 @@ export default function ProductModal({ product, onClose }: Props) {
 
   return (
     <>
+      {/* ── Product modal backdrop ── */}
       <div className={styles.backdrop} onClick={onClose} />
+
+      {/* ── Product modal ── */}
       <div className={styles.modal} role="dialog" aria-modal="true" aria-label={product.name}>
-        {/* Close */}
         <button className={styles.closeBtn} onClick={onClose} aria-label="Close">
           <FiX size={20} />
         </button>
 
         <div className={styles.body}>
-          {/* Image side */}
+
+          {/* ══ IMAGE SIDE ══ */}
           <div className={styles.imageSide}>
             <div className={styles.imageWrap}>
               {product.image ? (
@@ -103,7 +197,7 @@ export default function ProductModal({ product, onClose }: Props) {
                   src={product.image}
                   alt={product.name}
                   fill
-                  sizes="(max-width: 768px) 100vw, 50vw"
+                  sizes="(max-width: 768px) 100vw, 340px"
                   style={{ objectFit: 'contain', objectPosition: 'center' }}
                 />
               ) : (
@@ -113,14 +207,47 @@ export default function ProductModal({ product, onClose }: Props) {
                 </div>
               )}
             </div>
+
             {product.isTopSeller && (
-              <div className={styles.sellerBadge}>
-                <MdStar size={14} /> Top Seller
+              <div className={styles.sellerBadge}><MdStar size={14} /> Top Seller</div>
+            )}
+
+            {/* ── Clothes / Fabric swatch strip ── */}
+            {swatches.length > 0 && (
+              <div className={styles.fabricGallery}>
+                <p className={styles.fabricGalleryLabel}>
+                  Choose Fabric · Click to Preview Full Size
+                </p>
+                <div className={styles.fabricGalleryRow}>
+                  {swatches.map(swatch => (
+                    <button
+                      key={swatch.id}
+                      className={styles.fabricThumb}
+                      onClick={() => setLightboxSwatch(swatch)}
+                      title={`Preview ${swatch.name}`}
+                      aria-label={`Open full preview of ${swatch.name}`}
+                    >
+                      <Image
+                        src={swatch.image}
+                        alt={swatch.name}
+                        fill
+                        sizes="64px"
+                        style={{ objectFit: 'cover' }}
+                      />
+                      <div className={styles.fabricThumbOverlay}>
+                        <span className={styles.fabricThumbHint}>👁</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <p className={styles.fabricGalleryHint}>
+                  Tap any fabric to open full-screen preview with garment try-on
+                </p>
               </div>
             )}
           </div>
 
-          {/* Info side */}
+          {/* ══ INFO SIDE ══ */}
           <div className={styles.infoSide}>
             <div className={styles.categoryTag}>{product.category}</div>
             <h2 className={styles.productName}>{product.name}</h2>
@@ -137,9 +264,7 @@ export default function ProductModal({ product, onClose }: Props) {
                 Available Colours
               </div>
               <div className={styles.colorGrid}>
-                {colors.map(c => (
-                  <span key={c} className={styles.colorChip}>{c}</span>
-                ))}
+                {colors.map(c => <span key={c} className={styles.colorChip}>{c}</span>)}
               </div>
             </div>
 
@@ -150,9 +275,7 @@ export default function ProductModal({ product, onClose }: Props) {
                 Fabric Options
               </div>
               <div className={styles.fabricRow}>
-                {fabrics.map(f => (
-                  <span key={f} className={styles.fabricChip}>{f}</span>
-                ))}
+                {fabrics.map(f => <span key={f} className={styles.fabricChip}>{f}</span>)}
               </div>
             </div>
 
@@ -180,8 +303,7 @@ export default function ProductModal({ product, onClose }: Props) {
                 onClick={onClose}
                 style={{ flex: 1, justifyContent: 'center' }}
               >
-                <FiScissors size={15} />
-                Customize & Order
+                <FiScissors size={15} /> Customize &amp; Order
               </Link>
               <a
                 href={`https://wa.me/${WHATSAPP_NUMBER}?text=${waMsg}`}
@@ -190,19 +312,25 @@ export default function ProductModal({ product, onClose }: Props) {
                 className="btn btn-whatsapp"
                 style={{ flex: 1, justifyContent: 'center' }}
               >
-                <FaWhatsapp size={17} />
-                WhatsApp Enquiry
+                <FaWhatsapp size={17} /> WhatsApp Enquiry
               </a>
             </div>
-            <button
-              className={styles.addCartBtn}
-              onClick={handleAddToCart}
-            >
+            <button className={styles.addCartBtn} onClick={handleAddToCart}>
               Add to Cart for Later
             </button>
           </div>
         </div>
       </div>
+
+      {/* ── Fabric lightbox — completely independent popup above modal ── */}
+      {lightboxSwatch && (
+        <FabricLightbox
+          fabric={lightboxSwatch}
+          sketchImage={product.sketchImage}
+          garmentName={product.category}
+          onClose={() => setLightboxSwatch(null)}
+        />
+      )}
     </>
   );
 }

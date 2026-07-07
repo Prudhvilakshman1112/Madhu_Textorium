@@ -1,3 +1,4 @@
+/* ─── Backdrop ─────────────────────────────────────── */
 .backdrop {
   position: fixed;
   inset: 0;
@@ -7,6 +8,7 @@
   animation: fadeIn 0.25s ease;
 }
 
+/* ─── Modal shell ──────────────────────────────────── */
 .modal {
   position: fixed;
   top: 50%;
@@ -16,8 +18,8 @@
   background: var(--bg-card);
   border: 1px solid var(--accent-border);
   border-radius: 20px;
-  width: min(900px, 96vw);
-  max-height: 90vh;
+  width: min(960px, 96vw);
+  max-height: 92vh;
   overflow-y: auto;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
   animation: modalIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -25,14 +27,15 @@
 
 @keyframes modalIn {
   from { opacity: 0; transform: translate(-50%, -46%); }
-  to { opacity: 1; transform: translate(-50%, -50%); }
+  to   { opacity: 1; transform: translate(-50%, -50%); }
 }
 
 @keyframes fadeIn {
   from { opacity: 0; }
-  to { opacity: 1; }
+  to   { opacity: 1; }
 }
 
+/* ─── Close button ─────────────────────────────────── */
 .closeBtn {
   position: absolute;
   top: 16px;
@@ -40,56 +43,42 @@
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  /* Always solid black circle — visible on any background */
   background: #000;
   border: none;
-  /* Default X colour: white */
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 10;
+  z-index: 20;
   transition: background 0.2s, transform 0.15s;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
+.closeBtn:hover { background: #222; transform: scale(1.1); }
+[data-theme="dark"]  .closeBtn { color: var(--accent, #c9a84c); }
+[data-theme="light"] .closeBtn { color: #e53e3e; }
 
-.closeBtn:hover {
-  background: #222;
-  transform: scale(1.1);
-}
-
-/* Dark theme — gold X mark */
-[data-theme="dark"] .closeBtn {
-  color: var(--accent, #c9a84c);
-}
-
-/* Light theme — red X mark */
-[data-theme="light"] .closeBtn {
-  color: #e53e3e;
-}
-
-
-/* Body layout */
+/* ─── Body grid ────────────────────────────────────── */
 .body {
   display: grid;
-  grid-template-columns: 300px 1fr;
-  min-height: 480px;
+  grid-template-columns: 340px 1fr;
+  min-height: 520px;
 }
 
-/* Image side */
+/* ══════════════════ IMAGE SIDE ══════════════════ */
 .imageSide {
   position: relative;
-  background: var(--bg-soft, #f5f5f5);
+  background: var(--bg-soft);
   border-radius: 20px 0 0 20px;
   overflow: hidden;
-  /* No aspect-ratio on desktop — stretches to fill modal body height naturally */
+  display: flex;
+  flex-direction: column;
 }
 
 .imageWrap {
   position: relative;
-  height: 100%;
-  min-height: 400px;
+  flex: 1;
+  min-height: 320px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -114,8 +103,8 @@
 
 .sellerBadge {
   position: absolute;
-  top: 16px;
-  left: 16px;
+  top: 12px;
+  left: 12px;
   background: var(--accent);
   color: #fff;
   font-size: 0.68rem;
@@ -127,15 +116,96 @@
   display: flex;
   align-items: center;
   gap: 5px;
+  z-index: 6;
 }
 [data-theme="dark"] .sellerBadge { color: var(--bg); }
 
-/* Info side */
+/* ══════════════════ FABRIC SWATCH STRIP ══════════════════ */
+.fabricGallery {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  padding: 12px 14px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+[data-theme="light"] .fabricGallery {
+  background: rgba(44, 18, 8, 0.07);
+  border-top: 1px solid rgba(44, 18, 8, 0.15);
+}
+
+.fabricGalleryLabel {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 8px;
+}
+[data-theme="light"] .fabricGalleryLabel { color: var(--text-muted); }
+
+.fabricGalleryRow {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) transparent;
+}
+.fabricGalleryRow::-webkit-scrollbar { height: 3px; }
+.fabricGalleryRow::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+
+/* Individual swatch thumbnail — clicking opens LIGHTBOX popup */
+.fabricThumb {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  min-width: 60px;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+.fabricThumb:hover {
+  border-color: var(--accent);
+  transform: translateY(-3px) scale(1.06);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Hover overlay showing eye icon */
+.fabricThumbOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  font-size: 1.1rem;
+  z-index: 2;
+}
+.fabricThumb:hover .fabricThumbOverlay { opacity: 1; }
+
+.fabricThumbHint { line-height: 1; }
+
+.fabricGalleryHint {
+  margin-top: 7px;
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.3);
+  font-style: italic;
+}
+[data-theme="light"] .fabricGalleryHint { color: var(--text-muted); opacity: 0.7; }
+
+/* ══════════════════ INFO SIDE ══════════════════ */
 .infoSide {
   padding: 32px 28px;
   display: flex;
   flex-direction: column;
   gap: 0;
+  overflow-y: auto;
 }
 
 .categoryTag {
@@ -156,25 +226,6 @@
   margin-bottom: 14px;
 }
 
-.priceRow {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.price {
-  font-family: var(--font-serif);
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: var(--accent);
-}
-
-.priceNote {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-}
-
 .description {
   font-size: 0.9rem;
   color: var(--text-secondary);
@@ -184,10 +235,7 @@
   border-bottom: 1px solid var(--border-subtle);
 }
 
-/* Sections */
-.section {
-  margin-bottom: 18px;
-}
+.section { margin-bottom: 18px; }
 
 .sectionTitle {
   display: flex;
@@ -201,12 +249,7 @@
   margin-bottom: 10px;
 }
 
-/* Colors */
-.colorGrid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
+.colorGrid { display: flex; flex-wrap: wrap; gap: 6px; }
 
 .colorChip {
   padding: 5px 12px;
@@ -218,12 +261,7 @@
   white-space: nowrap;
 }
 
-/* Fabrics */
-.fabricRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
+.fabricRow { display: flex; flex-wrap: wrap; gap: 6px; }
 
 .fabricChip {
   padding: 5px 12px;
@@ -234,13 +272,7 @@
   color: var(--text-secondary);
 }
 
-/* Features */
-.featureList {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  list-style: none;
-}
+.featureList { display: flex; flex-direction: column; gap: 7px; list-style: none; }
 
 .featureItem {
   display: flex;
@@ -250,7 +282,6 @@
   color: var(--text-secondary);
 }
 
-/* Actions */
 .actions {
   display: flex;
   gap: 10px;
@@ -271,23 +302,15 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
+.addCartBtn:hover { color: var(--accent); }
 
-.addCartBtn:hover {
-  color: var(--accent);
-}
-
-/* Responsive */
-@media (max-width: 700px) {
-  .modal { width: 96vw; border-radius: 16px; }
-  .body { grid-template-columns: 1fr; }
-  /* On mobile the image stacks on top — give it 3:4 portrait ratio */
-  .imageSide {
-    border-radius: 16px 16px 0 0;
-    aspect-ratio: 3 / 4;
-    width: 100%;
-  }
-  .imageWrap { min-height: 220px; }
-  .infoSide { padding: 20px 18px; }
+/* ══════════════════ RESPONSIVE ══════════════════ */
+@media (max-width: 720px) {
+  .modal  { width: 96vw; border-radius: 16px; }
+  .body   { grid-template-columns: 1fr; }
+  .imageSide { border-radius: 16px 16px 0 0; }
+  .imageWrap { min-height: 240px; }
+  .infoSide  { padding: 20px 18px; }
   .productName { font-size: 1.35rem; }
   .actions { flex-direction: column; }
 }
