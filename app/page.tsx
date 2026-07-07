@@ -14,6 +14,7 @@ import { PiScissors, PiRuler } from 'react-icons/pi';
 import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
 import ProductModal, { Product, FabricSwatch } from '@/components/ProductModal/ProductModal';
+import { createClient } from '@/lib/supabase/client';
 import styles from './page.module.css';
 
 // ─── DATA ────────────────────────────────────────────────
@@ -69,7 +70,7 @@ function withMeta(p: Omit<Product, 'fabricSwatches' | 'sketchImage'>): Product {
   };
 }
 
-const PRODUCTS: Product[] = [
+const STATIC_PRODUCTS: Product[] = [
   withMeta({ id: 'p1', name: 'Royal Heritage Suit', category: 'Suits', price: 8500, isTopSeller: true,
     image: '/images/real/suits/royal-heritage-suit-2/IMG_20260702_130407.png.jpeg',
     imageFav: '/images/real/suits/royal-heritage-suit-1/IMG_20260702_130252.png.jpeg' }),
@@ -96,8 +97,6 @@ const PRODUCTS: Product[] = [
     imageFav: '/images/real/suits/three-piece-suit-1/IMG_20260702_130224.png.jpeg' }),
 ];
 
-const TOP_SELLERS = PRODUCTS.filter(p => p.isTopSeller);
-
 const REVIEWS = [
   { name: 'Ravi Shankar P.', role: 'Corporate Professional, Vizag', review: 'Absolutely stunning suit! The fit was perfect on the first try. Madhu Textorium\'s craftsmanship is unmatched in all of Visakhapatnam.', stars: 5, initials: 'RS' },
   { name: 'Anil Kumar M.', role: 'Wedding Client', review: 'Got my Sherwani done for my wedding — every single guest complimented it. The fabric quality and stitching precision is top notch!', stars: 5, initials: 'AK' },
@@ -123,6 +122,72 @@ export default function HomePage() {
   const [heroLoaded, setHeroLoaded] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const reviewTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Dynamic products list from Supabase with local fallback
+  const [products, setProducts] = useState<Product[]>(STATIC_PRODUCTS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const supabase = createClient();
+        
+        // Fetch products
+        const { data: dbProducts, error: pError } = await supabase
+          .from('products')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (pError) throw pError;
+
+        if (dbProducts && dbProducts.length > 0) {
+          // Fetch fabric swatches (the clothes/swatches)
+          const { data: dbSwatches, error: sError } = await supabase
+            .from('fabric_swatches')
+            .select('*');
+
+          if (sError) throw sError;
+
+          // Map database records to the UI Product model
+          const enriched = (dbProducts || []).map(p => {
+            const productSwatches = (dbSwatches || [])
+              .filter(sw => sw.product_id === p.id)
+              .map(sw => ({
+                id: sw.id,
+                name: sw.name,
+                image: sw.image
+              }));
+
+            return {
+              id: p.id,
+              name: p.name,
+              category: p.category,
+              price: Number(p.price),
+              isTopSeller: p.is_top_seller,
+              image: p.image || undefined,
+              imageFav: p.image_fav || undefined,
+              sketchImage: p.sketch_image || undefined,
+              description: p.description || undefined,
+              colors: p.colors || [],
+              fabrics: p.fabrics || [],
+              features: p.features || [],
+              fabricSwatches: productSwatches
+            };
+          });
+
+          setProducts(enriched);
+        }
+      } catch (err) {
+        console.error('Failed to load products from database, using static fallback:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadProducts();
+  }, []);
+
+  const topSellers = products.filter(p => p.isTopSeller);
 
   // Pick hero image based on current theme
   const heroSrc = theme === 'light' ? '/images/hero-light.png' : '/images/hero.png';
@@ -369,7 +434,7 @@ export default function HomePage() {
             <h2 className="section-title">Customer <span>Favourites</span></h2>
           </div>
           <div className={styles.topSellersGrid}>
-            {TOP_SELLERS.map(product => {
+            {topSellers.map(product => {
               const favImg = (product as Product & { imageFav?: string }).imageFav || product.image;
               const openModal = () => setSelectedProduct({ ...product, image: favImg });
               return (
@@ -421,7 +486,7 @@ export default function HomePage() {
             <p className="section-subtitle">Each piece is available for customization. Click any item to explore colours, fabrics and details.</p>
           </div>
           <div className={styles.productsGrid}>
-            {PRODUCTS.map(product => (
+            {products.map(product => (
               <div key={product.id} className={styles.productCard}
                 onClick={() => setSelectedProduct(product)} role="button" tabIndex={0}
                 onKeyDown={e => e.key === 'Enter' && setSelectedProduct(product)}>

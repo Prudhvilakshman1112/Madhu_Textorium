@@ -227,39 +227,6 @@ export default function ProductModal({ product, onClose }: Props) {
               <div className={styles.sellerBadge}><MdStar size={14} /> Top Seller</div>
             )}
 
-            {/* ── Clothes / Fabric swatch strip ── */}
-            {swatches.length > 0 && (
-              <div className={styles.fabricGallery}>
-                <p className={styles.fabricGalleryLabel}>
-                  Choose Fabric · Click to Preview Full Size
-                </p>
-                <div className={styles.fabricGalleryRow}>
-                  {swatches.map(swatch => (
-                    <button
-                      key={swatch.id}
-                      className={styles.fabricThumb}
-                      onClick={() => setLightboxSwatch(swatch)}
-                      title={`Preview ${swatch.name}`}
-                      aria-label={`Open full preview of ${swatch.name}`}
-                    >
-                      <Image
-                        src={swatch.image}
-                        alt={swatch.name}
-                        fill
-                        sizes="64px"
-                        style={{ objectFit: 'cover' }}
-                      />
-                      <div className={styles.fabricThumbOverlay}>
-                        <span className={styles.fabricThumbHint}>👁</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-                <p className={styles.fabricGalleryHint}>
-                  Tap any fabric to open full-screen preview with garment try-on
-                </p>
-              </div>
-            )}
           </div>
 
           {/* ══ INFO SIDE ══ */}
@@ -272,16 +239,42 @@ export default function ProductModal({ product, onClose }: Props) {
                 `Handcrafted ${product.name.toLowerCase()} — made to your exact measurements by our master tailors. Premium fabric, precise stitching, flawless finish guaranteed.`}
             </p>
 
-            {/* Colours */}
-            <div className={styles.section}>
-              <div className={styles.sectionTitle}>
-                <MdColorLens size={16} style={{ color: 'var(--accent)' }} />
-                Available Colours
+            {/* Choose Fabric Gallery (Moved from Left Column) */}
+            {swatches.length > 0 && (
+              <div className={styles.section}>
+                <div className={styles.sectionTitle}>
+                  <GiSewingNeedle size={16} style={{ color: 'var(--accent)' }} />
+                  Choose Fabric / Clothes
+                </div>
+                <div className={styles.fabricGallery} style={{ marginTop: 12 }}>
+                  <div className={styles.fabricGalleryRow}>
+                    {swatches.map(swatch => (
+                      <button
+                        key={swatch.id}
+                        className={styles.fabricThumb}
+                        onClick={() => setLightboxSwatch(swatch)}
+                        title={`Preview ${swatch.name}`}
+                        aria-label={`Open full preview of ${swatch.name}`}
+                      >
+                        <Image
+                          src={swatch.image}
+                          alt={swatch.name}
+                          fill
+                          sizes="64px"
+                          style={{ objectFit: 'cover' }}
+                        />
+                        <div className={styles.fabricThumbOverlay}>
+                          <span className={styles.fabricThumbHint}>👁</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  <p className={styles.fabricGalleryHint} style={{ marginTop: 8 }}>
+                    Tap any fabric to open full-screen preview with garment try-on sketch
+                  </p>
+                </div>
               </div>
-              <div className={styles.colorGrid}>
-                {colors.map(c => <span key={c} className={styles.colorChip}>{c}</span>)}
-              </div>
-            </div>
+            )}
 
             {/* Fabrics */}
             <div className={styles.section}>

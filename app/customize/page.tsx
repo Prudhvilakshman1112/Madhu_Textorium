@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { FaWhatsapp } from 'react-icons/fa';
 import { FiArrowLeft, FiArrowRight, FiUpload, FiCheck, FiX, FiScissors, FiInfo, FiAlertCircle } from 'react-icons/fi';
+import { createOrder } from '@/lib/queries';
 import styles from './page.module.css';
 
 // ─── GARMENT TYPES ────────────────────────────────────────────────────────────
@@ -439,8 +440,6 @@ interface UploadedImage {
 }
 
 const WHATSAPP_NUMBER = '919030727629';
-const CLOUDINARY_UPLOAD_PRESET = 'madhu_textorium';
-const CLOUDINARY_CLOUD_NAME = 'dummycloud';
 
 // ─── INNER PAGE COMPONENT ─────────────────────────────────────────────────────
 function CustomizePageInner() {
@@ -540,18 +539,33 @@ function CustomizePageInner() {
     });
   };
 
-  const uploadToCloudinary = async (file: File, label: string): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-    formData.append('folder', 'madhu_textorium_orders');
-    formData.append('public_id', `order_${Date.now()}_${label.replace(/\s/g, '_')}`);
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
-      method: 'POST', body: formData,
+  const uploadToR2 = async (file: File, label: string): Promise<string> => {
+    const fileExt = file.name.slice(file.name.lastIndexOf('.')) || '.png';
+    const filename = `measure_${Date.now()}_${label.toLowerCase().replace(/\s+/g, '_')}${fileExt}`;
+    
+    // Step 1: Request presigned PUT URL from our internal API
+    const res = await fetch('/api/r2-presigned-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        folder: 'customer_measurements',
+        publicId: filename,
+        contentType: file.type || 'image/png'
+      })
     });
-    if (!res.ok) throw new Error('Upload failed');
-    const data = await res.json();
-    return data.secure_url;
+
+    if (!res.ok) throw new Error('Failed to get R2 upload signature');
+    const { uploadUrl, publicUrl } = await res.json();
+
+    // Step 2: PUT file directly to Cloudflare R2
+    const uploadRes = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type || 'image/png' },
+      body: file
+    });
+
+    if (!uploadRes.ok) throw new Error('R2 direct upload failed');
+    return publicUrl;
   };
 
   const handleUploadImages = async () => {
@@ -562,9 +576,10 @@ function CustomizePageInner() {
         updated[i] = { ...updated[i], uploading: true };
         setImages([...updated]);
         try {
-          const url = await uploadToCloudinary(updated[i].file!, updated[i].label);
+          const url = await uploadToR2(updated[i].file!, updated[i].label);
           updated[i] = { ...updated[i], url, uploading: false };
-        } catch {
+        } catch (err) {
+          console.error(`R2 direct upload error for ${updated[i].label}:`, err);
           updated[i] = { ...updated[i], uploading: false, error: 'Upload skipped – share on WhatsApp', url: 'PENDING_WHATSAPP' };
         }
         setImages([...updated]);
@@ -644,9 +659,45 @@ function CustomizePageInner() {
   };
 
   const handleSendToWhatsApp = async () => {
-    await handleUploadImages();
-    const msg = buildWhatsAppMessage();
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, '_blank');
+    try {
+      // 1. Upload images to Cloudflare R2
+      await handleUploadImages();
+
+      // 2. Filter active measurements and styles
+      const activeMeasurements: Record<string, string> = {};
+      Object.entries(measurements).forEach(([key, val]) => {
+        if (val) activeMeasurements[key] = val;
+      });
+
+      const activeStylePrefs: Record<string, string> = {};
+      Object.entries(styleOptions).forEach(([key, val]) => {
+        if (val) activeStylePrefs[key] = val;
+      });
+
+      // 3. Write order to Supabase
+      await createOrder({
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        garment_type: garment,
+        fabric_preference: fabric,
+        color_preference: color,
+        style_preferences: activeStylePrefs,
+        measurements: activeMeasurements,
+        photo_front_url: images[0].url || undefined,
+        photo_back_url: images[1].url || undefined,
+        photo_side_url: images[2].url || undefined,
+        special_instructions: notes,
+      });
+
+      // 4. Open pre-filled WhatsApp confirmation
+      const msg = buildWhatsAppMessage();
+      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, '_blank');
+    } catch (err) {
+      console.error('Failed to save order to database:', err);
+      // Fallback: Proceed to WhatsApp anyway so the customer's submit flow is not blocked
+      const msg = buildWhatsAppMessage();
+      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, '_blank');
+    }
   };
 
   // ── Validation & navigation ─────────────────────────────────────────────────
