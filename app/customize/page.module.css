@@ -510,6 +510,78 @@
 }
 .photoTip svg { color: var(--accent); flex-shrink: 0; margin-top: 2px; }
 
+.photoReference {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  margin-top: 4px;
+}
+
+.photoReference:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.photoReferenceImageWrap {
+  aspect-ratio: 3/4;
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  background: #f0f0f0;
+}
+[data-theme="dark"] .photoReferenceImageWrap {
+  background: #151515;
+}
+
+.photoReferenceImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+
+.photoReference:hover .photoReferenceImg {
+  transform: scale(1.05);
+}
+
+.photoReferenceOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.photoReference:hover .photoReferenceOverlay {
+  opacity: 1;
+}
+
+.photoReferenceLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: center;
+  padding: 2px 0;
+}
+
 /* ── Step 4: Details ─────────────────────────────────────────────── */
 .detailsGrid {
   display: grid;
@@ -806,6 +878,18 @@
   .stepNav      { flex-direction: column; gap: 12px; }
   .stepNav :global(.btn) { width: 100%; justify-content: center; }
   .toast        { min-width: 90vw; max-width: 95vw; }
+  .photoReference {
+    padding: 4px;
+    gap: 4px;
+    border-radius: 8px;
+  }
+  .photoReferenceLabel {
+    font-size: 0.55rem;
+    letter-spacing: 0.01em;
+  }
+  .photoReferenceOverlay {
+    font-size: 0.6rem;
+  }
 }
 
 /* ── Swatch Select Component ─────────────────────────────────────── */

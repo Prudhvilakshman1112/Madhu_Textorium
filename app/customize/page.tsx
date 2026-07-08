@@ -435,6 +435,7 @@ const MEASUREMENT_GUIDES: Record<string, GuideData> = {
 // ─── UPLOAD TYPES ─────────────────────────────────────────────────────────────
 interface UploadedImage {
   label: string;
+  refKey: string;
   file: File | null;
   preview: string | null;
   url: string | null;
@@ -516,9 +517,9 @@ function CustomizePageInner() {
   });
 
   const [images, setImages] = useState<UploadedImage[]>([
-    { label: 'Front View', file: null, preview: null, url: null, uploading: false, error: null },
-    { label: 'Back View',  file: null, preview: null, url: null, uploading: false, error: null },
-    { label: 'Side View',  file: null, preview: null, url: null, uploading: false, error: null },
+    { label: 'Front View', refKey: 'front', file: null, preview: null, url: null, uploading: false, error: null },
+    { label: 'Back View',  refKey: 'back',  file: null, preview: null, url: null, uploading: false, error: null },
+    { label: 'Side View',  refKey: 'side',  file: null, preview: null, url: null, uploading: false, error: null },
   ]);
   const [notes, setNotes]               = useState('');
   const [customerName, setCustomerName] = useState('');
@@ -1090,6 +1091,27 @@ function CustomizePageInner() {
                     )}
                   </div>
                   {img.error && <p className={styles.photoError}>{img.error}</p>}
+
+                  {/* Reference Image Guide */}
+                  <div
+                    className={styles.photoReference}
+                    onClick={() => setLightboxImg(`${R2}/images/references/${img.refKey}.png`)}
+                  >
+                    <div className={styles.photoReferenceImageWrap}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`${R2}/images/references/${img.refKey}.png`}
+                        alt={`${img.label} Reference`}
+                        className={styles.photoReferenceImg}
+                      />
+                      <div className={styles.photoReferenceOverlay}>
+                        <span>Tap to zoom</span>
+                      </div>
+                    </div>
+                    <div className={styles.photoReferenceLabel}>
+                      Reference Pose
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
