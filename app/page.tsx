@@ -17,6 +17,11 @@ import ProductModal, { Product, FabricSwatch } from '@/components/ProductModal/P
 import { createClient } from '@/lib/supabase/client';
 import styles from './page.module.css';
 
+// ─── Cloudflare R2 CDN base URL ───────────────────────────────────────────────
+// All images are served from R2 so Vercel never processes or serves image bytes.
+// This keeps Vercel bandwidth + image optimisation usage at zero.
+const R2 = process.env.NEXT_PUBLIC_CLOUDFLARE_R2_URL ?? '';
+
 // ─── DATA ────────────────────────────────────────────────
 const USP_ITEMS = [
   { icon: <PiScissors size={24} />, title: 'Custom Design Clothes', desc: 'Every garment crafted to your exact vision' },
@@ -26,39 +31,39 @@ const USP_ITEMS = [
 ];
 
 const CATEGORIES = [
-  { id: 'suits', name: 'Suits', image: '/images/real/suits/suits/IMG_20260702_130035.png.jpeg', desc: 'Classic & Modern Cuts' },
-  { id: 'shirts', name: 'Shirts', image: '/images/real/shirts/shirts/IMG_20260702_134315.jpg.jpeg', desc: 'Premium Formal & Casual' },
-  { id: 'pants', name: 'Pants', image: '/images/real/pants/pants/IMG_20260702_134436.png.jpeg', desc: 'Perfect Drape & Fit' },
-  { id: 'modi-coat', name: 'Modi Coat', image: '/images/real/modi-coat/modi-coat/IMG_20260702_130607.png.jpeg', desc: 'Refined Indian Formal' },
-  { id: 'jodhpuri', name: 'Jodhpuri', image: '/images/real/jodhpuri/jodhpuri/IMG_20260702_125452.png.jpeg', desc: 'Regal Traditional Wear' },
-  { id: 'sherwani', name: 'Sherwani', image: '/images/real/sherwani/sherwani/IMG_20260702_125913.png.jpeg', desc: 'Wedding & Ceremony' },
-  { id: 'blazer', name: 'Blazers', image: '/images/real/blazers/blazers/IMG_20260702_130317.png.jpeg', desc: 'Smart Business Style' },
-  { id: 'kurta', name: 'Kurta', image: '/images/real/kurta/kurta/IMG_20260702_130159.png.jpeg', desc: 'Festive & Ethnic Grace' },
+  { id: 'suits', name: 'Suits', image: `${R2}/images/real/suits/suits/IMG_20260702_130035.png.jpeg`, desc: 'Classic & Modern Cuts' },
+  { id: 'shirts', name: 'Shirts', image: `${R2}/images/real/shirts/shirts/IMG_20260702_134315.jpg.jpeg`, desc: 'Premium Formal & Casual' },
+  { id: 'pants', name: 'Pants', image: `${R2}/images/real/pants/pants/IMG_20260702_134436.png.jpeg`, desc: 'Perfect Drape & Fit' },
+  { id: 'modi-coat', name: 'Modi Coat', image: `${R2}/images/real/modi-coat/modi-coat/IMG_20260702_130607.png.jpeg`, desc: 'Refined Indian Formal' },
+  { id: 'jodhpuri', name: 'Jodhpuri', image: `${R2}/images/real/jodhpuri/jodhpuri/IMG_20260702_125452.png.jpeg`, desc: 'Regal Traditional Wear' },
+  { id: 'sherwani', name: 'Sherwani', image: `${R2}/images/real/sherwani/sherwani/IMG_20260702_125913.png.jpeg`, desc: 'Wedding & Ceremony' },
+  { id: 'blazer', name: 'Blazers', image: `${R2}/images/real/blazers/blazers/IMG_20260702_130317.png.jpeg`, desc: 'Smart Business Style' },
+  { id: 'kurta', name: 'Kurta', image: `${R2}/images/real/kurta/kurta/IMG_20260702_130159.png.jpeg`, desc: 'Festive & Ethnic Grace' },
 ];
 
 // ─── Per-category fabric swatches ──────────────────────────────────────────
 
 const FABRIC_DATA: Record<string, FabricSwatch[]> = {
-  'Suits':     [{ id: 'suits-f1',     name: 'Charcoal Herringbone Wool', image: '/images/fabrics/fabric-suits.png' }],
-  'Shirts':    [{ id: 'shirts-f1',    name: 'White Oxford Cotton',        image: '/images/fabrics/fabric-shirts.png' }],
-  'Pants':     [{ id: 'pants-f1',     name: 'Navy Gabardine',             image: '/images/fabrics/fabric-pants.png' }],
-  'Modi Coat': [{ id: 'modi-f1',      name: 'Royal Blue Brocade',         image: '/images/fabrics/fabric-modi-coat.png' }],
-  'Jodhpuri':  [{ id: 'jodh-f1',      name: 'Deep Maroon Silk',           image: '/images/fabrics/fabric-jodhpuri.png' }],
-  'Sherwani':  [{ id: 'sher-f1',      name: 'Ivory Gold Brocade',         image: '/images/fabrics/fabric-sherwani.png' }],
-  'Blazers':   [{ id: 'blaz-f1',      name: 'Navy Blue Tweed',            image: '/images/fabrics/fabric-blazers.png' }],
-  'Kurta':     [{ id: 'kurta-f1',     name: 'White Cotton Mulmul',        image: '/images/fabrics/fabric-kurta.png' }],
+  'Suits':     [{ id: 'suits-f1',     name: 'Charcoal Herringbone Wool', image: `${R2}/images/fabrics/fabric-suits.png` }],
+  'Shirts':    [{ id: 'shirts-f1',    name: 'White Oxford Cotton',        image: `${R2}/images/fabrics/fabric-shirts.png` }],
+  'Pants':     [{ id: 'pants-f1',     name: 'Navy Gabardine',             image: `${R2}/images/fabrics/fabric-pants.png` }],
+  'Modi Coat': [{ id: 'modi-f1',      name: 'Royal Blue Brocade',         image: `${R2}/images/fabrics/fabric-modi-coat.png` }],
+  'Jodhpuri':  [{ id: 'jodh-f1',      name: 'Deep Maroon Silk',           image: `${R2}/images/fabrics/fabric-jodhpuri.png` }],
+  'Sherwani':  [{ id: 'sher-f1',      name: 'Ivory Gold Brocade',         image: `${R2}/images/fabrics/fabric-sherwani.png` }],
+  'Blazers':   [{ id: 'blaz-f1',      name: 'Navy Blue Tweed',            image: `${R2}/images/fabrics/fabric-blazers.png` }],
+  'Kurta':     [{ id: 'kurta-f1',     name: 'White Cotton Mulmul',        image: `${R2}/images/fabrics/fabric-kurta.png` }],
 };
 
 // ─── Per-category garment outline sketches ──────────────────────────────────
 const SKETCH_MAP: Record<string, string> = {
-  'Suits':     '/images/sketches/sketch-suits.jpeg',
-  'Shirts':    '/images/sketches/sketch-shirts.jpeg',
-  'Pants':     '/images/sketches/sketch-pants.jpeg',
-  'Modi Coat': '/images/sketches/sketch-modi-coat.jpeg',
-  'Jodhpuri':  '/images/sketches/sketch-jodhpuri.jpeg',
-  'Sherwani':  '/images/sketches/sketch-sherwani.jpeg',
-  'Blazers':   '/images/sketches/sketch-blazers.jpeg',
-  'Kurta':     '/images/sketches/sketch-kurta.jpeg',
+  'Suits':     `${R2}/images/sketches/sketch-suits.jpeg`,
+  'Shirts':    `${R2}/images/sketches/sketch-shirts.jpeg`,
+  'Pants':     `${R2}/images/sketches/sketch-pants.jpeg`,
+  'Modi Coat': `${R2}/images/sketches/sketch-modi-coat.jpeg`,
+  'Jodhpuri':  `${R2}/images/sketches/sketch-jodhpuri.jpeg`,
+  'Sherwani':  `${R2}/images/sketches/sketch-sherwani.jpeg`,
+  'Blazers':   `${R2}/images/sketches/sketch-blazers.jpeg`,
+  'Kurta':     `${R2}/images/sketches/sketch-kurta.jpeg`,
 };
 
 // Helper: enrich a raw product with per-category swatch + sketch data
@@ -72,29 +77,29 @@ function withMeta(p: Omit<Product, 'fabricSwatches' | 'sketchImage'>): Product {
 
 const STATIC_PRODUCTS: Product[] = [
   withMeta({ id: 'p1', name: 'Royal Heritage Suit', category: 'Suits', price: 8500, isTopSeller: true,
-    image: '/images/real/suits/royal-heritage-suit-2/IMG_20260702_130407.png.jpeg',
-    imageFav: '/images/real/suits/royal-heritage-suit-1/IMG_20260702_130252.png.jpeg' }),
+    image: `${R2}/images/real/suits/royal-heritage-suit-2/IMG_20260702_130407.png.jpeg`,
+    imageFav: `${R2}/images/real/suits/royal-heritage-suit-1/IMG_20260702_130252.png.jpeg` }),
   withMeta({ id: 'p2', name: 'Executive Slim Fit Suit', category: 'Suits', price: 7200,
-    image: '/images/real/suits/executive-slim-suit/IMG_20260702_130620.png.jpeg' }),
+    image: `${R2}/images/real/suits/executive-slim-suit/IMG_20260702_130620.png.jpeg` }),
   withMeta({ id: 'p3', name: 'Premium Oxford Shirt', category: 'Shirts', price: 2400,
-    image: '/images/real/shirts/oxford-shirt/IMG_20260702_134328.png.jpeg' }),
+    image: `${R2}/images/real/shirts/oxford-shirt/IMG_20260702_134328.png.jpeg` }),
   withMeta({ id: 'p4', name: 'Modi Coat Ensemble', category: 'Modi Coat', price: 5500,
-    image: '/images/real/modi-coat/modi-coat-ensemble/IMG_20260702_130732.png.jpeg' }),
+    image: `${R2}/images/real/modi-coat/modi-coat-ensemble/IMG_20260702_130732.png.jpeg` }),
   withMeta({ id: 'p5', name: 'Jodhpuri Classic', category: 'Jodhpuri', price: 9500, isTopSeller: true,
-    image: '/images/real/jodhpuri/jodhpuri-classic-2/IMG_20260702_130858.png.jpeg',
-    imageFav: '/images/real/jodhpuri/jodhpuri-classic-1/IMG_20260702_130529.png.jpeg' }),
+    image: `${R2}/images/real/jodhpuri/jodhpuri-classic-2/IMG_20260702_130858.png.jpeg`,
+    imageFav: `${R2}/images/real/jodhpuri/jodhpuri-classic-1/IMG_20260702_130529.png.jpeg` }),
   withMeta({ id: 'p6', name: 'Grand Sherwani Set', category: 'Sherwani', price: 12000, isTopSeller: true,
-    image: '/images/real/sherwani/grand-sherwani-2/IMG_20260702_125944.png.jpeg',
-    imageFav: '/images/real/sherwani/grand-sherwani-1/IMG_20260702_130111.png.jpeg' }),
+    image: `${R2}/images/real/sherwani/grand-sherwani-2/IMG_20260702_125944.png.jpeg`,
+    imageFav: `${R2}/images/real/sherwani/grand-sherwani-1/IMG_20260702_130111.png.jpeg` }),
   withMeta({ id: 'p7', name: 'Business Blazer', category: 'Blazers', price: 5800,
-    image: '/images/real/blazers/business-blazer/IMG_20260702_125737.png.jpeg' }),
+    image: `${R2}/images/real/blazers/business-blazer/IMG_20260702_125737.png.jpeg` }),
   withMeta({ id: 'p8', name: 'Festive Kurta Pajama', category: 'Kurta', price: 3200,
-    image: '/images/real/kurta/festive-kurta/IMG_20260702_130351.png.jpeg' }),
+    image: `${R2}/images/real/kurta/festive-kurta/IMG_20260702_130351.png.jpeg` }),
   withMeta({ id: 'p9', name: 'Merino Formal Trousers', category: 'Pants', price: 2800,
-    image: '/images/real/pants/merino-trousers/IMG_20260702_134403.png.jpeg' }),
+    image: `${R2}/images/real/pants/merino-trousers/IMG_20260702_134403.png.jpeg` }),
   withMeta({ id: 'p10', name: 'Three-Piece Prestige Suit', category: 'Suits', price: 14000, isTopSeller: true,
-    image: '/images/real/suits/three-piece-suit-2/IMG_20260702_125853.png.jpeg',
-    imageFav: '/images/real/suits/three-piece-suit-1/IMG_20260702_130224.png.jpeg' }),
+    image: `${R2}/images/real/suits/three-piece-suit-2/IMG_20260702_125853.png.jpeg`,
+    imageFav: `${R2}/images/real/suits/three-piece-suit-1/IMG_20260702_130224.png.jpeg` }),
 ];
 
 const REVIEWS = [
@@ -151,7 +156,10 @@ export default function HomePage() {
           // Map database records to the UI Product model
           const enriched = (dbProducts || []).map(p => {
             const productSwatches = (dbSwatches || [])
-              .filter(sw => sw.product_id === p.id)
+              .filter(sw => {
+                const swatchProduct = dbProducts.find(prod => prod.id === sw.product_id);
+                return swatchProduct && swatchProduct.category === p.category && sw.is_visible !== false;
+              })
               .map(sw => ({
                 id: sw.id,
                 name: sw.name,
@@ -190,7 +198,7 @@ export default function HomePage() {
   const topSellers = products.filter(p => p.isTopSeller);
 
   // Pick hero image based on current theme
-  const heroSrc = theme === 'light' ? '/images/hero-light.png' : '/images/hero.png';
+  const heroSrc = theme === 'light' ? `${R2}/images/hero-light.png` : `${R2}/images/hero.png`;
 
   // Reset hero animation when theme switches
   useEffect(() => {
@@ -304,7 +312,7 @@ export default function HomePage() {
           <div className={styles.aboutGrid}>
             <div className={styles.aboutImage}>
               <div className={styles.aboutImageWrap}>
-                <Image src="/images/about-measurement.png" alt="Custom tailoring measurement guide" fill sizes="(max-width: 768px) 100vw, 50vw" style={{ objectFit: 'cover' }} />
+                <Image src={`${R2}/images/about-measurement.png`} alt="Custom tailoring measurement guide" fill sizes="(max-width: 768px) 100vw, 50vw" style={{ objectFit: 'cover' }} />
                 <div className={styles.aboutImageOverlay} />
               </div>
               <div className={styles.aboutBadge}>
@@ -365,7 +373,7 @@ export default function HomePage() {
             ))}
           </div>
           <div className={styles.howMeasureImage}>
-            <Image src="/images/how-to-measure.png" alt="How to take body measurement photos - front, back and side view guide"
+            <Image src={`${R2}/images/how-to-measure.png`} alt="How to take body measurement photos - front, back and side view guide"
               width={900} height={380} style={{ objectFit: 'contain', width: '100%', height: 'auto' }} />
             <div className={styles.howMeasureCaption}>
               <GiSewingNeedle size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
@@ -654,7 +662,7 @@ export default function HomePage() {
           <div className={styles.footerGrid}>
             <div className={styles.footerBrand}>
               <div className={styles.footerLogo}>
-                <Image src="/image.png" alt="Madhu Textorium Logo" width={56} height={56}
+                <Image src={`${R2}/images/logo.png`} alt="Madhu Textorium Logo" width={56} height={56}
                   style={{ borderRadius: '50%', border: '2px solid var(--accent)', background: '#000', flexShrink: 0 }} />
                 <div>
                   <p className={styles.footerBrandName}>Madhu Textorium</p>

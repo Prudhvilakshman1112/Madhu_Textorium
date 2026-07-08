@@ -1,25 +1,28 @@
 'use client';
 
-import { useState, useRef, useCallback, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { FaWhatsapp } from 'react-icons/fa';
 import { FiArrowLeft, FiArrowRight, FiUpload, FiCheck, FiX, FiScissors, FiInfo, FiAlertCircle } from 'react-icons/fi';
-import { createOrder } from '@/lib/queries';
+import { createOrder, getFabricSwatchesByCategory, DbFabricSwatch } from '@/lib/queries';
 import styles from './page.module.css';
+
+// ─── Cloudflare R2 CDN base URL ───────────────────────────────────────────────
+const R2 = process.env.NEXT_PUBLIC_CLOUDFLARE_R2_URL ?? '';
 
 // ─── GARMENT TYPES ────────────────────────────────────────────────────────────
 const GARMENT_TYPES = [
-  { id: 'shirt',        label: 'Shirt',                image: '/images/real/shirts/shirts/IMG_20260702_134315.jpg.jpeg',       desc: 'Formal, casual, party wear' },
-  { id: 'suit',         label: 'Suit',                 image: '/images/real/suits/suits/IMG_20260702_130035.png.jpeg',         desc: '2-piece, 3-piece, slim fit' },
-  { id: 'pant',         label: 'Pant / Trouser',       image: '/images/real/pants/pants/IMG_20260702_134436.png.jpeg',         desc: 'Formal, chinos, pleated' },
-  { id: 'modi-coat',    label: 'Modi Coat / Nehru',    image: '/images/real/modi-coat/modi-coat/IMG_20260702_130607.png.jpeg', desc: 'Waist coat, Modi jacket' },
-  { id: 'jodhpuri',     label: 'Jodhpuri Suit',        image: '/images/real/jodhpuri/jodhpuri/IMG_20260702_125452.png.jpeg',   desc: 'Royal traditional wear' },
-  { id: 'sherwani',     label: 'Sherwani',             image: '/images/real/sherwani/sherwani/IMG_20260702_125913.png.jpeg',   desc: 'Wedding & ceremonies' },
-  { id: 'blazer',       label: 'Blazer',               image: '/images/real/blazers/blazers/IMG_20260702_130317.png.jpeg',     desc: 'Casual, formal, events' },
-  { id: 'kurta',        label: 'Kurta / Kurta Pajama', image: '/images/real/kurta/kurta/IMG_20260702_130159.png.jpeg',        desc: 'Festive, ethnic, casual' },
-  { id: 'indo-western', label: 'Indo Western',         image: '/images/real/sherwani/sherwani/IMG_20260702_125913.png.jpeg',   desc: '3-piece: Coat + Kurta + Pyjama' },
+  { id: 'shirt',        label: 'Shirt',                image: `${R2}/images/real/shirts/shirts/IMG_20260702_134315.jpg.jpeg`,       desc: 'Formal, casual, party wear' },
+  { id: 'suit',         label: 'Suit',                 image: `${R2}/images/real/suits/suits/IMG_20260702_130035.png.jpeg`,         desc: '2-piece, 3-piece, slim fit' },
+  { id: 'pant',         label: 'Pant / Trouser',       image: `${R2}/images/real/pants/pants/IMG_20260702_134436.png.jpeg`,         desc: 'Formal, chinos, pleated' },
+  { id: 'modi-coat',    label: 'Modi Coat / Nehru',    image: `${R2}/images/real/modi-coat/modi-coat/IMG_20260702_130607.png.jpeg`, desc: 'Waist coat, Modi jacket' },
+  { id: 'jodhpuri',     label: 'Jodhpuri Suit',        image: `${R2}/images/real/jodhpuri/jodhpuri/IMG_20260702_125452.png.jpeg`,   desc: 'Royal traditional wear' },
+  { id: 'sherwani',     label: 'Sherwani',             image: `${R2}/images/real/sherwani/sherwani/IMG_20260702_125913.png.jpeg`,   desc: 'Wedding & ceremonies' },
+  { id: 'blazer',       label: 'Blazer',               image: `${R2}/images/real/blazers/blazers/IMG_20260702_130317.png.jpeg`,     desc: 'Casual, formal, events' },
+  { id: 'kurta',        label: 'Kurta / Kurta Pajama', image: `${R2}/images/real/kurta/kurta/IMG_20260702_130159.png.jpeg`,        desc: 'Festive, ethnic, casual' },
+  { id: 'indo-western', label: 'Indo Western',         image: `${R2}/images/real/sherwani/sherwani/IMG_20260702_125913.png.jpeg`,   desc: '3-piece: Coat + Kurta + Pyjama' },
 ];
 
 // ─── FABRIC & COLOUR OPTIONS ──────────────────────────────────────────────────
@@ -354,77 +357,77 @@ interface GuideData {
 const MEASUREMENT_GUIDES: Record<string, GuideData> = {
   chest: {
     title: 'Chest Circumference',
-    image: '/images/measurements/measure_chest.png.jpeg',
+    image: `${R2}/images/measurements/measure_chest.png.jpeg`,
     description: 'Stand straight with arms relaxed at your sides. Wrap the measuring tape horizontally around the fullest part of your chest, passing under the armpits. Keep the tape flat and snug, but not too tight. Do not include your arms.'
   },
   stomach: {
     title: 'Stomach / Abdomen',
-    image: '/images/measurements/measure_stomach.png.jpeg',
+    image: `${R2}/images/measurements/measure_stomach.png.jpeg`,
     description: 'Stand naturally without sucking in. Wrap the tape horizontally around your stomach/abdomen area (typically at the belly button level). Keep the tape parallel to the floor.'
   },
   neck: {
     title: 'Collar / Neck',
-    image: '/images/measurements/measure_neck.png.jpeg',
+    image: `${R2}/images/measurements/measure_neck.png.jpeg`,
     description: 'Wrap the measuring tape around the base of your neck where a shirt collar would sit. Keep the tape snug but comfortable; place one finger between the tape and your neck for breathing room.'
   },
   sleeveLength: {
     title: 'Hand / Sleeve Length',
-    image: '/images/measurements/measure_sleeve.png.jpeg',
+    image: `${R2}/images/measurements/measure_sleeve.png.jpeg`,
     description: 'Extend your arm straight out to the side horizontally. Measure from the shoulder seam point, straight along the outside top of the arm, down to your wrist bone.'
   },
   shirtLength: {
     title: 'Shirt Length',
-    image: '/images/measurements/measure_length.png.jpeg',
+    image: `${R2}/images/measurements/measure_length.png.jpeg`,
     description: 'Measure vertically from the nape of your neck (the bony bump at the base of your neck) straight down your spine to the desired length (hips for shirts).'
   },
   coatLength: {
     title: 'Coat / Blazer Length',
-    image: '/images/measurements/measure_length.png.jpeg',
+    image: `${R2}/images/measurements/measure_length.png.jpeg`,
     description: 'Measure vertically from the nape of your neck (the bony bump at the base of your neck) straight down your spine to the desired length (mid-thigh for blazers).'
   },
   pantLength: {
     title: 'Trouser / Pant Length',
-    image: '/images/measurements/measure_pant_length.png.jpeg',
+    image: `${R2}/images/measurements/measure_pant_length.png.jpeg`,
     description: 'Measure vertically from your natural waistline down the outside of your leg (outseam) to your ankle bone or desired trouser length.'
   },
   waist: {
     title: 'Waist Circumference',
-    image: '/images/measurements/measure_waist.png.jpeg',
+    image: `${R2}/images/measurements/measure_waist.png.jpeg`,
     description: 'Stand straight and wrap the measuring tape horizontally around your natural waistline (usually right above the belly button, where your trousers sit). Keep it snug but comfortable.'
   },
   hips: {
     title: 'Hips / Seat',
-    image: '/images/measurements/measure_hips.png.jpeg',
+    image: `${R2}/images/measurements/measure_hips.png.jpeg`,
     description: 'Stand with your feet together. Wrap the measuring tape horizontally around the fullest part of your hips and seat.'
   },
   thigh: {
     title: 'Thigh Circumference',
-    image: '/images/measurements/measure_thigh.png.jpeg',
+    image: `${R2}/images/measurements/measure_thigh.png.jpeg`,
     description: 'Wrap the tape horizontally around the fullest part of your upper thigh, just below the crotch.'
   },
   knee: {
     title: 'Knee Circumference',
-    image: '/images/measurements/measure_knee.png.jpeg',
+    image: `${R2}/images/measurements/measure_knee.png.jpeg`,
     description: 'Wrap the tape horizontally around your knee joint while standing straight.'
   },
   ankle: {
     title: 'Ankle / Bottom Circumference',
-    image: '/images/measurements/measure_ankle.png.jpeg',
+    image: `${R2}/images/measurements/measure_ankle.png.jpeg`,
     description: 'Wrap the tape horizontally around your ankle bone, where the trouser cuff will sit.'
   },
   rise: {
     title: 'Rise / Kirtha',
-    image: '/images/measurements/measure_rise.png.jpeg',
+    image: `${R2}/images/measurements/measure_rise.png.jpeg`,
     description: 'Measure from the front center of your waistband, down through your crotch, and up to the back center of your waistband to find the rise / kirtha.'
   },
   inseam: {
     title: 'Inseam Length',
-    image: '/images/measurements/measure_inseam.png.jpeg',
+    image: `${R2}/images/measurements/measure_inseam.png.jpeg`,
     description: 'Measure the inside of the leg from the crotch down to the ankle bone or desired trouser length.'
   },
   bicep: {
     title: 'Bicep Circumference',
-    image: '/images/measurements/measure_bicep.png.jpeg',
+    image: `${R2}/images/measurements/measure_bicep.png.jpeg`,
     description: 'Wrap the tape horizontally around the widest part of your upper arm bicep while holding your arm relaxed.'
   }
 };
@@ -469,6 +472,36 @@ function CustomizePageInner() {
   const [fabric, setFabric]   = useState('');
   const [color, setColor]     = useState('');
 
+  const [availableSwatches, setAvailableSwatches] = useState<DbFabricSwatch[]>([]);
+  const [selectedSwatch, setSelectedSwatch] = useState<DbFabricSwatch | null>(null);
+
+  const getCategoryName = (g: string): string => {
+    const map: Record<string, string> = {
+      suit: 'Suits',
+      shirt: 'Shirts',
+      pant: 'Pants',
+      'modi-coat': 'Modi Coat',
+      jodhpuri: 'Jodhpuri',
+      sherwani: 'Sherwani',
+      blazer: 'Blazers',
+      kurta: 'Kurta',
+      'indo-western': 'Indo Western'
+    };
+    return map[g] || 'Suits';
+  };
+
+  useEffect(() => {
+    if (garment) {
+      const cat = getCategoryName(garment);
+      getFabricSwatchesByCategory(cat).then(res => {
+        setAvailableSwatches(res || []);
+        setSelectedSwatch(null);
+        setFabric('');
+        setColor('');
+      });
+    }
+  }, [garment]);
+
   const [measurements, setMeasurements] = useState<Measurements>({
     height: '', weight: '',
     chest: '', stomach: '', shoulder: '', sleeveLength: '', neck: '', bicep: '',
@@ -493,6 +526,16 @@ function CustomizePageInner() {
   const [uploading, setUploading]       = useState(false);
   const [toast, setToast]               = useState<{ message: string; fields: string[] } | null>(null);
   const [activeField, setActiveField]   = useState<string | null>(null);
+  const [submitting, setSubmitting]     = useState(false);
+  const [lightboxImg, setLightboxImg]   = useState<string | null>(null);
+
+  const parseFabric = (val: string) => {
+    const match = val.match(/^(.*?)\s*\((https?:\/\/.*?)\)$/);
+    if (match) {
+      return { name: match[1], url: match[2] };
+    }
+    return { name: val, url: null };
+  };
 
   const fileRefs = [
     useRef<HTMLInputElement>(null),
@@ -530,17 +573,39 @@ function CustomizePageInner() {
   };
 
   // ── Image handlers ──────────────────────────────────────────────────────────
-  const handleImageSelect = (index: number, file: File) => {
+  const handleImageSelect = async (index: number, file: File) => {
     const preview = URL.createObjectURL(file);
+    
+    // Set preview and uploading status in state
     setImages(prev => {
       const updated = [...prev];
-      updated[index] = { ...updated[index], file, preview, url: null, error: null };
+      updated[index] = { ...updated[index], file, preview, url: null, error: null, uploading: true };
       return updated;
     });
+
+    try {
+      const url = await uploadToR2(file, images[index].label);
+      setImages(prev => {
+        const updated = [...prev];
+        updated[index] = { ...updated[index], url, uploading: false };
+        return updated;
+      });
+    } catch (err) {
+      console.error(`Error uploading photo ${images[index].label}:`, err);
+      setImages(prev => {
+        const updated = [...prev];
+        updated[index] = { ...updated[index], uploading: false, error: 'Upload failed – please retry' };
+        return updated;
+      });
+    }
   };
 
   const uploadToR2 = async (file: File, label: string): Promise<string> => {
-    const fileExt = file.name.slice(file.name.lastIndexOf('.')) || '.png';
+    // Compress image client-side to WebP (< 200KB) before uploading to save storage & bandwidth
+    const { compressImage } = await import('@/lib/compressImage');
+    const optimizedFile = await compressImage(file);
+
+    const fileExt = optimizedFile.name.slice(optimizedFile.name.lastIndexOf('.')) || '.webp';
     const filename = `measure_${Date.now()}_${label.toLowerCase().replace(/\s+/g, '_')}${fileExt}`;
     
     // Step 1: Request presigned PUT URL from our internal API
@@ -550,7 +615,7 @@ function CustomizePageInner() {
       body: JSON.stringify({
         folder: 'customer_measurements',
         publicId: filename,
-        contentType: file.type || 'image/png'
+        contentType: optimizedFile.type || 'image/webp'
       })
     });
 
@@ -560,15 +625,15 @@ function CustomizePageInner() {
     // Step 2: PUT file directly to Cloudflare R2
     const uploadRes = await fetch(uploadUrl, {
       method: 'PUT',
-      headers: { 'Content-Type': file.type || 'image/png' },
-      body: file
+      headers: { 'Content-Type': optimizedFile.type || 'image/webp' },
+      body: optimizedFile
     });
 
     if (!uploadRes.ok) throw new Error('R2 direct upload failed');
     return publicUrl;
   };
 
-  const handleUploadImages = async () => {
+  const handleUploadImages = async (): Promise<UploadedImage[]> => {
     setUploading(true);
     const updated = [...images];
     for (let i = 0; i < updated.length; i++) {
@@ -586,10 +651,11 @@ function CustomizePageInner() {
       }
     }
     setUploading(false);
+    return updated;
   };
 
   // ── Build WhatsApp message ──────────────────────────────────────────────────
-  const buildWhatsAppMessage = (): string => {
+  const buildWhatsAppMessage = (imagesList: UploadedImage[] = images): string => {
     const selectedGarment = GARMENT_TYPES.find(g => g.id === garment);
     const missingFields   = getMissingRequiredFields();
 
@@ -640,7 +706,7 @@ function CustomizePageInner() {
 
     // Photos
     msg += `\n📸 *BODY PHOTOS:*\n━━━━━━━━━━━━━━━━━━━━\n`;
-    images.forEach(img => {
+    imagesList.forEach(img => {
       if (img.url && img.url !== 'PENDING_WHATSAPP') {
         msg += `• ${img.label}: ${img.url}\n`;
       } else if (img.file) {
@@ -659,9 +725,11 @@ function CustomizePageInner() {
   };
 
   const handleSendToWhatsApp = async () => {
+    if (submitting) return;
+    setSubmitting(true);
     try {
-      // 1. Upload images to Cloudflare R2
-      await handleUploadImages();
+      // 1. Upload images to Cloudflare R2 and get their latest URLs
+      const latestImages = await handleUploadImages();
 
       // 2. Filter active measurements and styles
       const activeMeasurements: Record<string, string> = {};
@@ -680,23 +748,25 @@ function CustomizePageInner() {
         customer_phone: customerPhone,
         garment_type: garment,
         fabric_preference: fabric,
-        color_preference: color,
+        color_preference: color || '',
         style_preferences: activeStylePrefs,
         measurements: activeMeasurements,
-        photo_front_url: images[0].url || undefined,
-        photo_back_url: images[1].url || undefined,
-        photo_side_url: images[2].url || undefined,
+        photo_front_url: latestImages[0]?.url || undefined,
+        photo_back_url: latestImages[1]?.url || undefined,
+        photo_side_url: latestImages[2]?.url || undefined,
         special_instructions: notes,
       });
 
       // 4. Open pre-filled WhatsApp confirmation
-      const msg = buildWhatsAppMessage();
+      const msg = buildWhatsAppMessage(latestImages);
       window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, '_blank');
     } catch (err) {
       console.error('Failed to save order to database:', err);
       // Fallback: Proceed to WhatsApp anyway so the customer's submit flow is not blocked
       const msg = buildWhatsAppMessage();
       window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, '_blank');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -1072,19 +1142,35 @@ function CustomizePageInner() {
                 <input className="form-input" type="tel" placeholder="+91 XXXXX XXXXX"
                   value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} />
               </div>
-              <div className="form-group">
-                <label className="form-label">Fabric Preference</label>
-                <select className="form-select" value={fabric} onChange={e => setFabric(e.target.value)}>
-                  <option value="">Select fabric type...</option>
-                  {FABRIC_OPTIONS.map(f => <option key={f} value={f}>{f}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Color Preference</label>
-                <select className="form-select" value={color} onChange={e => setColor(e.target.value)}>
-                  <option value="">Select color...</option>
-                  {COLOR_PALETTE.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <label className="form-label">Select Fabric Swatch *</label>
+                {availableSwatches.length === 0 ? (
+                  <div style={{ padding: 16, background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius)', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                    No fabric swatches available for this category. You can write your custom preference in the design notes below.
+                  </div>
+                ) : (
+                  <div className={styles.swatchSelectGrid}>
+                    {availableSwatches.map(sw => (
+                      <div
+                        key={sw.id}
+                        className={`${styles.swatchSelectCard} ${selectedSwatch?.id === sw.id ? styles.swatchSelectActive : ''}`}
+                        onClick={() => {
+                          setSelectedSwatch(sw);
+                          setFabric(`${sw.name} (${sw.image})`);
+                          setColor(''); // Clear color preference as swatches map color & fabric together
+                        }}
+                      >
+                        <div className={styles.swatchSelectImage}>
+                          <img src={sw.image} alt={sw.name} />
+                          {selectedSwatch?.id === sw.id && (
+                            <div className={styles.swatchSelectCheck}>✓</div>
+                          )}
+                        </div>
+                        <div className={styles.swatchSelectName}>{sw.name}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                 <label className="form-label">Special Instructions / Design Notes</label>
@@ -1136,7 +1222,20 @@ function CustomizePageInner() {
               {(fabric || color) && (
                 <div className={styles.reviewSection}>
                   <h3 className={styles.reviewSectionTitle}>Style</h3>
-                  {fabric && <p className={styles.reviewValue}>Fabric: {fabric}</p>}
+                  {fabric && (() => {
+                    const parsed = parseFabric(fabric);
+                    return (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6, marginBottom: color ? 8 : 0 }}>
+                        {parsed.url && (
+                          <img src={parsed.url} alt={parsed.name}
+                            style={{ width: 44, height: 44, borderRadius: 6, objectFit: 'cover', border: '1px solid var(--border-subtle)', cursor: 'zoom-in' }}
+                            onClick={() => setLightboxImg(parsed.url)}
+                          />
+                        )}
+                        <span className={styles.reviewValue} style={{ margin: 0 }}>Fabric: <strong>{parsed.name}</strong></span>
+                      </div>
+                    );
+                  })()}
                   {color  && <p className={styles.reviewValue}>Color: {color}</p>}
                 </div>
               )}
@@ -1194,7 +1293,13 @@ function CustomizePageInner() {
                     <div key={i} className={styles.reviewPhoto}>
                       {img.preview ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={img.preview} alt={img.label} className={styles.reviewPhotoImg} />
+                        <img
+                          src={img.preview}
+                          alt={img.label}
+                          className={styles.reviewPhotoImg}
+                          style={{ cursor: 'zoom-in' }}
+                          onClick={() => setLightboxImg(img.preview)}
+                        />
                       ) : (
                         <div className={styles.reviewPhotoEmpty}>No photo</div>
                       )}
@@ -1227,11 +1332,11 @@ function CustomizePageInner() {
               <button
                 className="btn btn-whatsapp"
                 onClick={handleSendToWhatsApp}
-                disabled={uploading || !garment}
+                disabled={submitting || uploading || !garment}
                 style={{ padding: '16px 40px', fontSize: '1rem' }}
               >
-                {uploading ? (
-                  <><div className={styles.spinner} /> Uploading Photos...</>
+                {submitting || uploading ? (
+                  <><div className={styles.spinner} /> Processing...</>
                 ) : (
                   <><FaWhatsapp size={20} /> Send to WhatsApp</>
                 )}
@@ -1240,6 +1345,33 @@ function CustomizePageInner() {
           </div>
         )}
       </div>
+
+      {lightboxImg && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
+            zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'zoom-out', backdropFilter: 'blur(4px)'
+          }}
+          onClick={() => setLightboxImg(null)}
+        >
+          <button
+            style={{
+              position: 'absolute', top: 20, right: 20, background: 'none', border: 'none',
+              color: '#fff', fontSize: '2.5rem', cursor: 'pointer', outline: 'none'
+            }}
+            onClick={(e) => { e.stopPropagation(); setLightboxImg(null); }}
+          >
+            ✕
+          </button>
+          <img
+            src={lightboxImg}
+            alt="Enlarged view"
+            style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: '8px', cursor: 'default' }}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </main>
   );
 }

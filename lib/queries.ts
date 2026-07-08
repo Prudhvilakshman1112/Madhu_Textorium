@@ -73,10 +73,18 @@ export async function getProductWithSwatches(productId: string): Promise<{ produ
     return null;
   }
 
+  const { data: catProducts } = await supabase
+    .from('products')
+    .select('id')
+    .eq('category', product.category);
+
+  const productIds = catProducts?.map(pr => pr.id) || [productId];
+
   const { data: swatches, error: sError } = await supabase
     .from('fabric_swatches')
     .select('*')
-    .eq('product_id', productId)
+    .in('product_id', productIds)
+    .eq('is_visible', true)
     .order('created_at', { ascending: true });
 
   if (sError) {
@@ -97,7 +105,8 @@ export async function getFabricSwatchesByCategory(category: string): Promise<DbF
   const { data, error } = await supabase
     .from('fabric_swatches')
     .select('*, products!inner(category)')
-    .eq('products.category', category);
+    .eq('products.category', category)
+    .eq('is_visible', true);
 
   if (error) {
     console.error('getFabricSwatchesByCategory failed:', error);

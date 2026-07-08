@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 3600 });
     
     // Cloudflare public serving URL structure (using custom domain or pub-xxx.r2.dev domain)
-    const publicUrl = `${process.env.CLOUDFLARE_PUBLIC_DOMAIN}/${key}`;
+    const publicUrl = `${process.env.NEXT_PUBLIC_CLOUDFLARE_R2_URL}/${key}`;
 
     return NextResponse.json({ uploadUrl, publicUrl });
   } catch (err: any) {
