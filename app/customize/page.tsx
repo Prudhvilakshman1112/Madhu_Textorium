@@ -529,14 +529,6 @@ function CustomizePageInner() {
   const [submitting, setSubmitting]     = useState(false);
   const [lightboxImg, setLightboxImg]   = useState<string | null>(null);
 
-  const parseFabric = (val: string) => {
-    const match = val.match(/^(.*?)\s*\((https?:\/\/.*?)\)$/);
-    if (match) {
-      return { name: match[1], url: match[2] };
-    }
-    return { name: val, url: null };
-  };
-
   const fileRefs = [
     useRef<HTMLInputElement>(null),
     useRef<HTMLInputElement>(null),
@@ -1156,17 +1148,16 @@ function CustomizePageInner() {
                         className={`${styles.swatchSelectCard} ${selectedSwatch?.id === sw.id ? styles.swatchSelectActive : ''}`}
                         onClick={() => {
                           setSelectedSwatch(sw);
-                          setFabric(`${sw.name} (${sw.image})`);
+                          setFabric(sw.image);
                           setColor(''); // Clear color preference as swatches map color & fabric together
                         }}
                       >
                         <div className={styles.swatchSelectImage}>
-                          <img src={sw.image} alt={sw.name} />
+                          <img src={sw.image} alt="Fabric Swatch" />
                           {selectedSwatch?.id === sw.id && (
                             <div className={styles.swatchSelectCheck}>✓</div>
                           )}
                         </div>
-                        <div className={styles.swatchSelectName}>{sw.name}</div>
                       </div>
                     ))}
                   </div>
@@ -1222,20 +1213,18 @@ function CustomizePageInner() {
               {(fabric || color) && (
                 <div className={styles.reviewSection}>
                   <h3 className={styles.reviewSectionTitle}>Style</h3>
-                  {fabric && (() => {
-                    const parsed = parseFabric(fabric);
-                    return (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6, marginBottom: color ? 8 : 0 }}>
-                        {parsed.url && (
-                          <img src={parsed.url} alt={parsed.name}
-                            style={{ width: 44, height: 44, borderRadius: 6, objectFit: 'cover', border: '1px solid var(--border-subtle)', cursor: 'zoom-in' }}
-                            onClick={() => setLightboxImg(parsed.url)}
-                          />
-                        )}
-                        <span className={styles.reviewValue} style={{ margin: 0 }}>Fabric: <strong>{parsed.name}</strong></span>
-                      </div>
-                    );
-                  })()}
+                  {fabric && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6, marginBottom: color ? 8 : 0 }}>
+                      {fabric.startsWith('http') ? (
+                        <img src={fabric} alt="Selected Fabric"
+                          style={{ width: 44, height: 44, borderRadius: 6, objectFit: 'cover', border: '1px solid var(--border-subtle)', cursor: 'zoom-in' }}
+                          onClick={() => setLightboxImg(fabric)}
+                        />
+                      ) : (
+                        <span className={styles.reviewValue} style={{ margin: 0 }}>Fabric: <strong>{fabric}</strong></span>
+                      )}
+                    </div>
+                  )}
                   {color  && <p className={styles.reviewValue}>Color: {color}</p>}
                 </div>
               )}
