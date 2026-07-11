@@ -119,6 +119,57 @@ export default function FabricLightbox({ fabric, sketchImage, garmentName, onClo
     setZoom(1.0);
   };
 
+  /* Dragging the Control Panel itself */
+  const [panelOffsetX, setPanelOffsetX] = useState(0);
+  const [panelOffsetY, setPanelOffsetY] = useState(0);
+  const [isPanelDragging, setIsPanelDragging] = useState(false);
+  const panelStart = useRef({ x: 0, y: 0 });
+  const panelOffset = useRef({ x: 0, y: 0 });
+
+  const handlePanelStart = (e: React.MouseEvent | React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) return; // Ignore drag if button is clicked
+
+    setIsPanelDragging(true);
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    panelStart.current = { x: clientX, y: clientY };
+    panelOffset.current = { x: panelOffsetX, y: panelOffsetY };
+  };
+
+  useEffect(() => {
+    if (!isPanelDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const dx = e.clientX - panelStart.current.x;
+      const dy = e.clientY - panelStart.current.y;
+      setPanelOffsetX(panelOffset.current.x + dx);
+      setPanelOffsetY(panelOffset.current.y + dy);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 0) return;
+      const dx = e.touches[0].clientX - panelStart.current.x;
+      const dy = e.touches[0].clientY - panelStart.current.y;
+      setPanelOffsetX(panelOffset.current.x + dx);
+      setPanelOffsetY(panelOffset.current.y + dy);
+    };
+
+    const handleMouseUp = () => setIsPanelDragging(false);
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('touchend', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleMouseUp);
+    };
+  }, [isPanelDragging]);
+
   return (
     <>
       {/* Dark backdrop — z above the product modal */}
@@ -224,7 +275,16 @@ export default function FabricLightbox({ fabric, sketchImage, garmentName, onClo
 
             {/* ── Floating Panning Joystick & Zoom controls ── */}
             {sketchOn && !processing && (
-              <div className={styles.controlsPanel}>
+              <div 
+                className={styles.controlsPanel}
+                onMouseDown={handlePanelStart}
+                onTouchStart={handlePanelStart}
+                style={{
+                  transform: `translate(${panelOffsetX}px, ${panelOffsetY}px)`,
+                  cursor: isPanelDragging ? 'grabbing' : 'grab',
+                  transition: isPanelDragging ? 'none' : 'transform 0.15s ease-out'
+                }}
+              >
                 <div className={styles.controlSection}>
                   <span className={styles.panelLabel}>Zoom</span>
                   <div className={styles.zoomButtons}>
