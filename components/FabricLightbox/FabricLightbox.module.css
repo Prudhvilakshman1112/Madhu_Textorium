@@ -127,9 +127,12 @@
 /* ── Main canvas area ── */
 .canvas {
   flex: 1;
-  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #050505;
+  padding: 16px;
   overflow: hidden;
-  background: #0a0a0a;
 }
 
 /* Fabric image — full cover background */
@@ -239,4 +242,186 @@
   .eyeBtn  { padding: 8px 14px; font-size: 0.72rem; }
   .fabricName { font-size: 0.95rem; }
   .hint { font-size: 0.7rem; padding: 8px 14px; bottom: 56px; }
+}
+
+/* ── 9:16 Canvas Container ── */
+.canvasContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: calc((100vh - 150px) * 9 / 16); /* Fit 9:16 aspect within viewport height subtracting header/footer */
+  max-height: calc(100vw * 16 / 9);
+  aspect-ratio: 9 / 16;
+  background: #000;
+  overflow: hidden;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  user-select: none;
+}
+
+/* ── Floating Controls Panel ── */
+.controlsPanel {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 10;
+  background: rgba(15, 15, 15, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(201, 168, 76, 0.3);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  animation: panelFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 148px;
+}
+
+@keyframes panelFadeIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.controlSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.panelLabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(245, 237, 213, 0.5);
+  width: 100%;
+  text-align: center;
+}
+
+/* ── Zoom Controls ── */
+.zoomButtons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 4px 6px;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.controlBtn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(245, 237, 213, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.controlBtn:hover {
+  background: rgba(201, 168, 76, 0.2);
+  color: #C9A84C;
+}
+
+.zoomValue {
+  font-family: monospace;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #F5EDD5;
+}
+
+/* ── Joystick Pad ── */
+.joystickPad {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.joyArrow {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(245, 237, 213, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.65rem;
+  transition: all 0.2s;
+}
+.joyArrow:hover {
+  background: rgba(201, 168, 76, 0.25);
+  color: #C9A84C;
+}
+
+.joyUp    { top: 4px; left: 33px; }
+.joyDown  { bottom: 4px; left: 33px; }
+.joyLeft  { left: 4px; top: 33px; }
+.joyRight { right: 4px; top: 33px; }
+
+.joyCenter {
+  position: absolute;
+  top: 33px;
+  left: 33px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(15, 15, 15, 0.9);
+  color: rgba(245, 237, 213, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.joyCenter:hover {
+  border-color: #C9A84C;
+  color: #C9A84C;
+}
+
+/* ── Mobile responsiveness for floating controls ── */
+@media (max-width: 768px) {
+  .controlsPanel {
+    bottom: 12px;
+    right: 12px;
+    padding: 10px;
+    width: 120px;
+    gap: 8px;
+    border-radius: 12px;
+  }
+  .joystickPad {
+    width: 78px;
+    height: 78px;
+  }
+  .joyArrow {
+    width: 20px;
+    height: 20px;
+    font-size: 0.55rem;
+  }
+  .joyUp    { top: 2px; left: 29px; }
+  .joyDown  { bottom: 2px; left: 29px; }
+  .joyLeft  { left: 2px; top: 29px; }
+  .joyRight { right: 2px; top: 29px; }
+  .joyCenter {
+    top: 29px;
+    left: 29px;
+    width: 20px;
+    height: 20px;
+  }
 }

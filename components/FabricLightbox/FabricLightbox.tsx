@@ -1,8 +1,6 @@
-'use client';
-
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import Image from 'next/image';
-import { FiX, FiEye, FiEyeOff, FiLoader } from 'react-icons/fi';
+import { FiX, FiEye, FiEyeOff, FiLoader, FiPlus, FiMinus, FiRotateCcw } from 'react-icons/fi';
 import { chromaKeyToTransparent } from '@/utils/chromaKey';
 import type { FabricSwatch } from '@/components/ProductModal/ProductModal';
 import styles from './FabricLightbox.module.css';
@@ -25,6 +23,16 @@ export default function FabricLightbox({ fabric, sketchImage, garmentName, onClo
    */
   const [processedSketch, setProcessedSketch] = useState<string | null>(null);
   const [processing, setProcessing]           = useState(false);
+
+  /* Panning and Zooming State for Background Fabric */
+  const [offsetX, setOffsetX] = useState(0);
+  const [offsetY, setOffsetY] = useState(0);
+  const [zoom, setZoom]       = useState(1.0);
+
+  /* Mouse / Touch dragging state */
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+  const dragOffset = useRef({ x: 0, y: 0 });
 
   /* Stable per-mount cache-buster so the browser always fetches the latest file */
   const cacheBust = useMemo(() => Date.now(), []);
@@ -68,6 +76,49 @@ export default function FabricLightbox({ fabric, sketchImage, garmentName, onClo
     };
   }, [handleKey]);
 
+  /* Drag handlers for direct canvas panning */
+  const handleStart = (clientX: number, clientY: number) => {
+    if (!sketchOn) return;
+    setIsDragging(true);
+    dragStart.current = { x: clientX, y: clientY };
+    dragOffset.current = { x: offsetX, y: offsetY };
+  };
+
+  const handleMove = (clientX: number, clientY: number) => {
+    if (!isDragging) return;
+    const dx = clientX - dragStart.current.x;
+    const dy = clientY - dragStart.current.y;
+    setOffsetX(dragOffset.current.x + dx);
+    setOffsetY(dragOffset.current.y + dy);
+  };
+
+  const handleEnd = () => {
+    setIsDragging(false);
+  };
+
+  /* Wheel handler for scrolling to zoom */
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!sketchOn) return;
+    e.preventDefault();
+    const zoomFactor = 0.05;
+    const newZoom = e.deltaY < 0 ? zoom + zoomFactor : zoom - zoomFactor;
+    setZoom(Math.max(0.5, Math.min(5.0, newZoom)));
+  };
+
+  /* Joystick continuous movement simulation */
+  const handleJoystickMove = (dir: 'up' | 'down' | 'left' | 'right', amount = 15) => {
+    if (dir === 'up') setOffsetY(prev => prev - amount);
+    if (dir === 'down') setOffsetY(prev => prev + amount);
+    if (dir === 'left') setOffsetX(prev => prev - amount);
+    if (dir === 'right') setOffsetX(prev => prev + amount);
+  };
+
+  const handleResetAdjustments = () => {
+    setOffsetX(0);
+    setOffsetY(0);
+    setZoom(1.0);
+  };
+
   return (
     <>
       {/* Dark backdrop — z above the product modal */}
@@ -78,9 +129,9 @@ export default function FabricLightbox({ fabric, sketchImage, garmentName, onClo
 
         {/* ── Top bar ── */}
         <div className={styles.topBar}>
+          {/* User requested: no text or fabric name should be displayed here */}
           <div className={styles.topLeft}>
-            <span className={styles.fabricName}>{fabric.name}</span>
-            <span className={styles.garmentLabel}>on {garmentName}</span>
+            {/* Intentionally left blank */}
           </div>
 
           <div className={styles.topRight}>
@@ -110,60 +161,141 @@ export default function FabricLightbox({ fabric, sketchImage, garmentName, onClo
         {/* ── Main canvas ── */}
         <div className={styles.canvas}>
 
-          {/* Layer 1: fabric fills background */}
-          <div className={styles.fabricLayer}>
-            <Image
-              src={fabric.image}
-              alt={fabric.name}
-              fill
-              priority
-              unoptimized
-              sizes="100vw"
-              style={{ objectFit: 'cover' }}
-            />
-          </div>
-
-          {/*
-            Layer 2: chroma-keyed sketch overlay.
-            The chromaKeyToTransparent() function already converted
-            magenta → transparent pixels in a Canvas, and returned a
-            data URL PNG with real alpha. We just stack it on top with
-            a plain <img>. No blend modes, no filters — the transparent
-            holes in the PNG reveal the fabric behind exactly as-is.
-          */}
-          {sketchOn && processedSketch && (
-            <div className={styles.sketchLayer}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={processedSketch}
-                alt={`${garmentName} garment outline`}
-                className={styles.sketchImg}
+          {/* 9:16 Aspect Ratio Container */}
+          <div 
+            className={styles.canvasContainer}
+            onMouseDown={e => handleStart(e.clientX, e.clientY)}
+            onMouseMove={e => handleMove(e.clientX, e.clientY)}
+            onMouseUp={handleEnd}
+            onMouseLeave={handleEnd}
+            onTouchStart={e => handleStart(e.touches[0].clientX, e.touches[0].clientY)}
+            onTouchMove={e => handleMove(e.touches[0].clientX, e.touches[0].clientY)}
+            onTouchEnd={handleEnd}
+            onWheel={handleWheel}
+            style={{ cursor: sketchOn ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
+          >
+            {/* Layer 1: fabric fills background */}
+            <div 
+              className={styles.fabricLayer}
+              style={{
+                transform: `translate(${offsetX}px, ${offsetY}px) scale(${zoom})`,
+                transformOrigin: 'center center',
+                transition: isDragging ? 'none' : 'transform 0.15s ease-out'
+              }}
+            >
+              <Image
+                src={fabric.image}
+                alt={fabric.name}
+                fill
+                priority
+                unoptimized
+                sizes="100vw"
+                style={{ objectFit: 'cover' }}
               />
             </div>
-          )}
 
-          {/* Spinner while chroma-key is processing */}
-          {sketchOn && processing && (
-            <div className={styles.processingOverlay}>
-              <FiLoader size={32} className={styles.spinner} />
-              <span>Preparing garment preview…</span>
-            </div>
-          )}
+            {/* Layer 2: chroma-keyed sketch overlay */}
+            {sketchOn && processedSketch && (
+              <div className={styles.sketchLayer}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={processedSketch}
+                  alt={`${garmentName} garment outline`}
+                  className={styles.sketchImg}
+                />
+              </div>
+            )}
 
-          {/* Hint shown before first Try-On click */}
-          {!sketchOn && sketchImage && (
-            <div className={styles.hint}>
-              <FiEye size={16} />
-              Tap &quot;Try On Garment&quot; to see this fabric stitched
-            </div>
-          )}
+            {/* Spinner while chroma-key is processing */}
+            {sketchOn && processing && (
+              <div className={styles.processingOverlay}>
+                <FiLoader size={32} className={styles.spinner} />
+                <span>Preparing garment preview…</span>
+              </div>
+            )}
+
+            {/* Hint shown before first Try-On click */}
+            {!sketchOn && sketchImage && (
+              <div className={styles.hint}>
+                <FiEye size={16} />
+                Tap &quot;Try On Garment&quot; to see this fabric stitched
+              </div>
+            )}
+
+            {/* ── Floating Panning Joystick & Zoom controls ── */}
+            {sketchOn && !processing && (
+              <div className={styles.controlsPanel}>
+                <div className={styles.controlSection}>
+                  <span className={styles.panelLabel}>Zoom</span>
+                  <div className={styles.zoomButtons}>
+                    <button 
+                      className={styles.controlBtn}
+                      onClick={() => setZoom(z => Math.max(0.5, z - 0.1))}
+                      title="Zoom Out"
+                    >
+                      <FiMinus size={14} />
+                    </button>
+                    <span className={styles.zoomValue}>{Math.round(zoom * 100)}%</span>
+                    <button 
+                      className={styles.controlBtn}
+                      onClick={() => setZoom(z => Math.min(5.0, z + 0.1))}
+                      title="Zoom In"
+                    >
+                      <FiPlus size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className={styles.controlSection}>
+                  <span className={styles.panelLabel}>Position</span>
+                  <div className={styles.joystickPad}>
+                    <button 
+                      className={`${styles.joyArrow} ${styles.joyUp}`} 
+                      onClick={() => handleJoystickMove('up')}
+                      title="Move Up"
+                    >
+                      ▲
+                    </button>
+                    <button 
+                      className={`${styles.joyArrow} ${styles.joyLeft}`} 
+                      onClick={() => handleJoystickMove('left')}
+                      title="Move Left"
+                    >
+                      ◀
+                    </button>
+                    <button 
+                      className={styles.joyCenter} 
+                      onClick={handleResetAdjustments}
+                      title="Reset Adjustments"
+                    >
+                      <FiRotateCcw size={12} />
+                    </button>
+                    <button 
+                      className={`${styles.joyArrow} ${styles.joyRight}`} 
+                      onClick={() => handleJoystickMove('right')}
+                      title="Move Right"
+                    >
+                      ▶
+                    </button>
+                    <button 
+                      className={`${styles.joyArrow} ${styles.joyDown}`} 
+                      onClick={() => handleJoystickMove('down')}
+                      title="Move Down"
+                    >
+                      ▼
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Bottom label ── */}
         <div className={styles.bottomBar}>
           <span className={styles.bottomNote}>
             {sketchOn && processedSketch
-              ? `The transparent garment area shows this ${fabric.name} fabric — everything else is the figure's natural look.`
+              ? 'Use the controls or drag directly on the garment to sync and position the fabric.'
               : 'This is the raw fabric texture. Toggle "Try On" to preview it as a garment.'}
           </span>
         </div>
