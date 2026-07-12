@@ -411,7 +411,7 @@ const MEASUREMENT_GUIDES: Record<string, GuideData> = {
   shirtLength: {
     title: 'Shirt Length',
     image: `${R2}/images/measurements/measure_length.png.jpeg`,
-    description: 'Measure vertically from the nape of your neck (the bony bump at the base of your neck) straight down your spine to the desired length (hips for shirts).'
+    description: 'Measure vertically from the nape of your neck (the bony bump at the base of your neck) straight down your spine to the desired length (hips for shirts). Note that shirt length is shorter than Kurta/Kurti length.'
   },
   coatLength: {
     title: 'Coat / Blazer Length',
@@ -463,6 +463,48 @@ const MEASUREMENT_GUIDES: Record<string, GuideData> = {
     image: `${R2}/images/measurements/measure_bicep.png.jpeg`,
     description: 'Wrap the tape horizontally around the widest part of your upper arm bicep while holding your arm relaxed.'
   }
+};
+
+const getMeasurementGuide = (fieldKey: string, garmentType: string): GuideData | null => {
+  const baseGuide = MEASUREMENT_GUIDES[fieldKey];
+
+  // Override for Sherwani / Indo-Western length
+  if (fieldKey === 'coatLength' && (garmentType === 'sherwani' || garmentType === 'indo-western')) {
+    return {
+      title: 'Sherwani Length',
+      image: `${R2}/images/measurements/measure_sherwani_length.png.jpeg`,
+      description: 'Measure vertically from the nape of your neck (the base of the neck at the back) down to your desired length (usually below the knee for a classic Sherwani). Note that Sherwani length is significantly longer than coat/blazer length.'
+    };
+  }
+
+  // Override for Kurta / Kurti length
+  if (fieldKey === 'shirtLength' && (garmentType === 'kurta' || garmentType === 'indo-western')) {
+    return {
+      title: 'Kurta / Kurti Length',
+      image: `${R2}/images/measurements/measure_kurti_length.png.jpeg`,
+      description: 'Measure vertically from the nape of your neck straight down to your desired length (usually around or just below the knee for Kurta/Kurti). Kurti length is longer than shirt length but shorter than Sherwani length.'
+    };
+  }
+
+  // Override for Kurti Length (add-on field)
+  if (fieldKey === 'kurtiLength') {
+    return {
+      title: 'Kurti Length',
+      image: `${R2}/images/measurements/measure_kurti_length.png.jpeg`,
+      description: 'Measure vertically from the nape of your neck straight down to your desired length (usually around or just below the knee for Kurti). Kurti length is longer than shirt length but shorter than Sherwani length.'
+    };
+  }
+
+  // Override for Waistcoat Length (add-on field)
+  if (fieldKey === 'waistcoatLength') {
+    return {
+      title: 'Waistcoat Length',
+      image: `${R2}/images/measurements/measure_length.png.jpeg`,
+      description: 'Measure vertically from the nape of your neck down to your desired waistcoat hem (usually covering the waistband).'
+    };
+  }
+
+  return baseGuide || null;
 };
 
 // ─── UPLOAD TYPES ─────────────────────────────────────────────────────────────
@@ -600,7 +642,33 @@ function CustomizePageInner() {
   const getRequiredFields = (): MeasurementField[] => {
     if (!garment) return [];
     const sections = GARMENT_MEASUREMENTS[garment] || [];
-    return sections.flatMap(s => s.fields.filter(f => f.required));
+    const fields = sections.flatMap(s => s.fields.filter(f => f.required));
+
+    // If kurti is chosen as an add-on in Modi Coat, require Kurti Length
+    if (garment === 'modi-coat' && modiAddKurti) {
+      fields.push({
+        key: 'kurtiLength',
+        label: 'Kurti Length',
+        placeholder: '38',
+        unit: 'in',
+        required: true,
+        hint: 'Nape to desired kurti hem'
+      });
+    }
+
+    // If waistcoat is chosen as a 3-piece in Suit, require Waistcoat Length
+    if (garment === 'suit' && suitPieceType === '3-piece') {
+      fields.push({
+        key: 'waistcoatLength',
+        label: 'Waistcoat Length',
+        placeholder: '26',
+        unit: 'in',
+        required: true,
+        hint: 'Nape to desired waistcoat hem'
+      });
+    }
+
+    return fields;
   };
 
   const getMissingRequiredFields = (): MeasurementField[] => {
@@ -722,6 +790,31 @@ function CustomizePageInner() {
     // 3-piece waistcoat length
     if (garment === 'suit' && suitPieceType === '3-piece' && measurements.waistcoatLength) {
       msg += `📐 *Waistcoat Length:* ${measurements.waistcoatLength}"\n\n`;
+    }
+
+    // Modi Coat kurti length
+    if (garment === 'modi-coat' && modiAddKurti && measurements.kurtiLength) {
+      msg += `📐 *Kurti Length:* ${measurements.kurtiLength}"\n\n`;
+    }
+
+    // Modi Coat pyjama measurements
+    if (garment === 'modi-coat' && modiAddPyjama) {
+      const pyjamaFields = [
+        { key: 'pantLength', label: 'Pyjama Length' },
+        { key: 'waist', label: 'Pyjama Waist' },
+        { key: 'thigh', label: 'Pyjama Thigh' },
+        { key: 'knee', label: 'Pyjama Knee' },
+        { key: 'ankle', label: 'Pyjama Ankle' },
+        { key: 'rise', label: 'Pyjama Rise / Kirtha' },
+      ];
+      const filledPyjama = pyjamaFields.filter(f => measurements[f.key as keyof Measurements]);
+      if (filledPyjama.length > 0) {
+        msg += `👖 *PYJAMA MEASUREMENTS:*\n━━━━━━━━━━━━━━━━━━━━\n`;
+        filledPyjama.forEach(f => {
+          msg += `• ${f.label}: ${measurements[f.key as keyof Measurements]}"\n`;
+        });
+        msg += `\n`;
+      }
     }
 
     // Measurements
@@ -985,11 +1078,12 @@ function CustomizePageInner() {
                       Waistcoat Length <span className={styles.unitBadge}>in</span>
                     </label>
                     <input
-                      className="form-input"
+                      className={`form-input ${activeField === 'waistcoatLength' ? styles.formInputFocused : ''}`}
                       type="number"
                       placeholder="e.g. 26"
                       value={measurements.waistcoatLength}
                       onChange={e => handleMeasurement('waistcoatLength', e.target.value)}
+                      onFocus={() => setActiveField('waistcoatLength')}
                     />
                     <p className={styles.fieldHint}>Nape to desired waistcoat hem</p>
                   </div>
@@ -1005,10 +1099,24 @@ function CustomizePageInner() {
                 const sectionGuide = (() => {
                   const hasActiveField = section.fields.some(f => f.key === activeField);
                   if (hasActiveField && activeField) {
-                    return MEASUREMENT_GUIDES[activeField];
+                    return getMeasurementGuide(activeField, garment);
                   }
+
+                  // Handle add-on fields display when focused in primary section
+                  if (activeField) {
+                    const isModiCoatMeasurements = garment === 'modi-coat' && section.title === 'Measurements';
+                    const isSuitMeasurements = garment === 'suit' && section.title === 'Jacket Measurements';
+                    
+                    if (isModiCoatMeasurements && (activeField === 'kurtiLength' || activeField === 'pantLength' || activeField === 'waist' || activeField === 'thigh' || activeField === 'knee' || activeField === 'ankle' || activeField === 'rise' || activeField === 'inseam')) {
+                      return getMeasurementGuide(activeField, garment);
+                    }
+                    if (isSuitMeasurements && activeField === 'waistcoatLength') {
+                      return getMeasurementGuide(activeField, garment);
+                    }
+                  }
+
                   if (section.fields.length > 0) {
-                    return MEASUREMENT_GUIDES[section.fields[0].key];
+                    return getMeasurementGuide(section.fields[0].key, garment);
                   }
                   return null;
                 })();
@@ -1168,11 +1276,12 @@ function CustomizePageInner() {
                           <div className="form-group" style={{ maxWidth: 280 }}>
                             <label className="form-label">Kurti Length <span className={styles.unitBadge}>in</span></label>
                             <input
-                              className="form-input"
+                              className={`form-input ${activeField === 'kurtiLength' ? styles.formInputFocused : ''}`}
                               type="number"
                               placeholder="e.g. 38"
                               value={measurements.kurtiLength}
                               onChange={e => handleMeasurement('kurtiLength', e.target.value)}
+                              onFocus={() => setActiveField('kurtiLength')}
                             />
                             <p className={styles.fieldHint}>Nape to desired kurti hem (remaining measurements are shared with Modi coat)</p>
                           </div>
@@ -1206,8 +1315,14 @@ function CustomizePageInner() {
                             ].map(f => (
                               <div key={f.key} className="form-group">
                                 <label className="form-label">{f.label} <span className={styles.unitBadge}>in</span></label>
-                                <input className="form-input" type="number" placeholder={`e.g. ${f.placeholder}`}
-                                  value={measurements[f.key]} onChange={e => handleMeasurement(f.key, e.target.value)} />
+                                <input
+                                  className={`form-input ${activeField === f.key ? styles.formInputFocused : ''}`}
+                                  type="number"
+                                  placeholder={`e.g. ${f.placeholder}`}
+                                  value={measurements[f.key]}
+                                  onChange={e => handleMeasurement(f.key, e.target.value)}
+                                  onFocus={() => setActiveField(f.key)}
+                                />
                                 <p className={styles.fieldHint}>{f.hint}</p>
                               </div>
                             ))}
