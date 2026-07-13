@@ -406,7 +406,7 @@ const MEASUREMENT_GUIDES: Record<string, GuideData> = {
   sleeveLength: {
     title: 'Hand / Sleeve Length',
     image: `${R2}/images/measurements/measure_sleeve.png.jpeg`,
-    description: 'Extend your arm straight out to the side horizontally. Measure from the shoulder seam point, straight along the outside top of the arm, down to your wrist bone.'
+    description: 'Extend your arm straight out vertically. Measure from the shoulder seam point, straight along the outside top of the arm, down to your wrist bone.'
   },
   shirtLength: {
     title: 'Shirt Length',
