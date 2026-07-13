@@ -98,6 +98,13 @@ const STATIC_PRODUCTS: Product[] = [
   withMeta({ id: 'p10', name: 'Three-Piece Prestige Suit', category: 'Suits', price: 14000, isTopSeller: true,
     image: `${R2}/images/real/suits/three-piece-suit-2/IMG_20260702_125853.png.jpeg`,
     imageFav: `${R2}/images/real/suits/three-piece-suit-1/IMG_20260702_130224.png.jpeg` }),
+  
+  withMeta({ id: 'p11', name: 'Suits', category: 'Suits', price: 8500,
+    image: `${R2}/images/real/suits/suits/IMG_20260702_130035.png.jpeg` }),
+  withMeta({ id: 'p12', name: 'Jodhpuri', category: 'Jodhpuri', price: 9500,
+    image: `${R2}/images/real/jodhpuri/jodhpuri/IMG_20260702_125452.png.jpeg` }),
+  withMeta({ id: 'p13', name: 'Sherwani', category: 'Sherwani', price: 12000,
+    image: `${R2}/images/real/sherwani/sherwani/IMG_20260702_125913.png.jpeg` }),
 ];
 
 const REVIEWS = [
@@ -153,13 +160,23 @@ export default function HomePage() {
 
           // Map database records to the UI Product model
           const enriched = (dbProducts || []).map(p => {
-            const productSwatches = (dbSwatches || [])
-              .filter(sw => sw.product_id === p.id && sw.is_visible !== false)
-              .map(sw => ({
+            // Get all swatches from products belonging to the same category
+            const categoryProducts = dbProducts.filter(dp => dp.category === p.category);
+            const categoryProductIds = categoryProducts.map(dp => dp.id);
+            
+            const rawSwatches = (dbSwatches || [])
+              .filter(sw => categoryProductIds.includes(sw.product_id) && sw.is_visible !== false);
+            
+            // Deduplicate by swatch image URL
+            const swatchMap = new Map();
+            rawSwatches.forEach(sw => {
+              swatchMap.set(sw.image.trim().toLowerCase(), {
                 id: sw.id,
                 name: sw.name,
                 image: sw.image
-              }));
+              });
+            });
+            const productSwatches = Array.from(swatchMap.values());
 
             return {
               id: p.id,
