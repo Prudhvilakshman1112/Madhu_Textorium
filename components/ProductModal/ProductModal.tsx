@@ -59,7 +59,6 @@ const DEFAULT_FEATURES  = [
   'Premium quality stitching',
   'Choice of lining & interlining',
   'Button & thread colour selection',
-  'Perfect fit or free re-stitch',
 ];
 
 export default function ProductModal({ product, onClose }: Props) {
@@ -173,7 +172,8 @@ export default function ProductModal({ product, onClose }: Props) {
 
   const colors    = product.colors   || DEFAULT_COLORS[product.category] || ['Navy Blue', 'Black', 'Charcoal'];
   const fabrics   = product.fabrics  || DEFAULT_FABRICS;
-  const features  = product.features || DEFAULT_FEATURES;
+  const features  = (product.features && product.features.length > 0 ? product.features : DEFAULT_FEATURES)
+    .filter(f => !/perfect\s*fit|re-stitch|re-stich/i.test(f));
   const swatches  = product.fabricSwatches || [];
 
   const waMsg = encodeURIComponent(

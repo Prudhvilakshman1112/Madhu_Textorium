@@ -133,6 +133,15 @@ const HOW_TO_STEPS = [
 const WHATSAPP_NUMBER = '919030727629';
 const waLink = (msg: string) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
 
+const getInitials = (name: string) => {
+  if (!name) return 'C';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+};
+
 const jsonLd = {
   "@context": "https://schema.org",
   "@graph": [
@@ -199,10 +208,20 @@ const jsonLd = {
 export default function HomePage() {
   const { addItem } = useCart();
   const { theme } = useTheme();
+  const [reviews, setReviews] = useState<any[]>(REVIEWS);
   const [reviewIdx, setReviewIdx] = useState(0);
   const [heroLoaded, setHeroLoaded] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const reviewTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Review form states
+  const [formName, setFormName] = useState('');
+  const [formRole, setFormRole] = useState('');
+  const [formRating, setFormRating] = useState(5);
+  const [formText, setFormText] = useState('');
+  const [formSubmitting, setFormSubmitting] = useState(false);
+  const [formSuccess, setFormSuccess] = useState(false);
+  const [formError, setFormError] = useState('');
 
   // Dynamic products list from Supabase with local fallback
   const [products, setProducts] = useState<Product[]>(STATIC_PRODUCTS);
@@ -294,17 +313,101 @@ export default function HomePage() {
   const resetReviewTimer = useCallback(() => {
     if (reviewTimerRef.current) clearInterval(reviewTimerRef.current);
     reviewTimerRef.current = setInterval(() => {
-      setReviewIdx(i => (i + 1) % REVIEWS.length);
+      setReviewIdx(i => (i + 1) % (reviews.length || 1));
     }, 5000);
-  }, []);
+  }, [reviews.length]);
 
   useEffect(() => {
     resetReviewTimer();
     return () => { if (reviewTimerRef.current) clearInterval(reviewTimerRef.current); };
   }, [resetReviewTimer]);
 
-  const prevReview = () => { resetReviewTimer(); setReviewIdx(i => (i - 1 + REVIEWS.length) % REVIEWS.length); };
-  const nextReview = () => { resetReviewTimer(); setReviewIdx(i => (i + 1) % REVIEWS.length); };
+  const prevReview = () => { resetReviewTimer(); setReviewIdx(i => (i - 1 + reviews.length) % (reviews.length || 1)); };
+  const nextReview = () => { resetReviewTimer(); setReviewIdx(i => (i + 1) % (reviews.length || 1)); };
+
+  useEffect(() => {
+    async function loadReviews() {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('reviews')
+          .select('*')
+          .eq('is_approved', true)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.warn('Reviews fetch failed, using static fallback:', error.message);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          const mapped = data.map(r => ({
+            name: r.name,
+            role: r.role || 'Customer',
+            review: r.review,
+            stars: Number(r.stars),
+            initials: r.initials || getInitials(r.name)
+          }));
+          setReviews(mapped);
+        }
+      } catch (err) {
+        console.error('Failed to load dynamic reviews:', err);
+      }
+    }
+    loadReviews();
+  }, []);
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formName.trim() || !formText.trim()) {
+      setFormError('Name and review text are required.');
+      return;
+    }
+    setFormSubmitting(true);
+    setFormError('');
+    setFormSuccess(false);
+
+    try {
+      const supabase = createClient();
+      const initials = getInitials(formName.trim());
+      const newReview = {
+        name: formName.trim(),
+        role: formRole.trim() || 'Customer',
+        review: formText.trim(),
+        stars: formRating,
+        initials,
+        is_approved: true
+      };
+
+      const { error } = await supabase
+        .from('reviews')
+        .insert([newReview]);
+
+      if (error) throw error;
+
+      setReviews(prev => [
+        {
+          name: newReview.name,
+          role: newReview.role,
+          review: newReview.review,
+          stars: newReview.stars,
+          initials: newReview.initials
+        },
+        ...prev
+      ]);
+      setReviewIdx(0);
+      setFormName('');
+      setFormRole('');
+      setFormRating(5);
+      setFormText('');
+      setFormSuccess(true);
+    } catch (err: any) {
+      console.error('Error submitting review:', err);
+      setFormError('Failed to submit review. Make sure database table is created.');
+    } finally {
+      setFormSubmitting(false);
+    }
+  };
 
   return (
     <main>
@@ -541,7 +644,7 @@ export default function HomePage() {
                 sherwanis and Jodhpuri suits to modern executive blazers — using premium fabrics from the finest mills.
               </p>
               <div className={styles.aboutPoints}>
-                {['Hand-selected premium fabrics', 'Master tailors with 20+ years experience', 'Perfect fit or free re-stitching', 'Traditional meets modern design'].map((pt, i) => (
+                {['Hand-selected premium fabrics', 'Master tailors with 40+ years experience', 'Traditional meets modern design'].map((pt, i) => (
                   <div key={i} className={styles.aboutPoint}>
                     <FiCheck className={styles.aboutCheck} />
                     <span>{pt}</span>
@@ -566,29 +669,116 @@ export default function HomePage() {
             <span className="section-label">Reviews</span>
             <h2 className="section-title">What Our <span>Customers Say</span></h2>
           </div>
-          <div className={styles.reviewsSlider}>
-            <button className={styles.reviewNav} onClick={prevReview} aria-label="Previous review"><FiChevronLeft size={20} /></button>
-            <div className={styles.reviewCard}>
-              <FaQuoteLeft className={styles.reviewQuote} size={28} />
-              <div className="stars">
-                {Array.from({ length: REVIEWS[reviewIdx].stars }).map((_, i) => <FaStar key={i} />)}
-              </div>
-              <p className={styles.reviewText}>&ldquo;{REVIEWS[reviewIdx].review}&rdquo;</p>
-              <div className={styles.reviewAuthor}>
-                <div className={styles.reviewAvatar}>{REVIEWS[reviewIdx].initials}</div>
-                <div>
-                  <p className={styles.reviewName}>{REVIEWS[reviewIdx].name}</p>
-                  <p className={styles.reviewRole}>{REVIEWS[reviewIdx].role}</p>
+          <div className={styles.reviewsContent}>
+            
+            {/* LEFT COLUMN: Reviews Slider */}
+            <div className={styles.reviewsLeftCol}>
+              {reviews.length > 0 ? (
+                <>
+                  <div className={styles.reviewsSlider}>
+                    <button className={styles.reviewNav} onClick={prevReview} aria-label="Previous review"><FiChevronLeft size={20} /></button>
+                    <div className={styles.reviewCard}>
+                      <FaQuoteLeft className={styles.reviewQuote} size={28} />
+                      <div className="stars" style={{ display: 'flex', gap: '3px', justifyContent: 'center', marginBottom: '14px' }}>
+                        {Array.from({ length: reviews[reviewIdx]?.stars || 5 }).map((_, i) => (
+                          <FaStar key={i} style={{ color: 'var(--accent)' }} />
+                        ))}
+                      </div>
+                      <p className={styles.reviewText}>&ldquo;{reviews[reviewIdx]?.review}&rdquo;</p>
+                      <div className={styles.reviewAuthor}>
+                        <div className={styles.reviewAvatar}>{reviews[reviewIdx]?.initials}</div>
+                        <div>
+                          <p className={styles.reviewName}>{reviews[reviewIdx]?.name}</p>
+                          <p className={styles.reviewRole}>{reviews[reviewIdx]?.role}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <button className={styles.reviewNav} onClick={nextReview} aria-label="Next review"><FiChevronRight size={20} /></button>
+                  </div>
+                  <div className={styles.reviewDots}>
+                    {reviews.map((_, i) => (
+                      <button key={i} className={`${styles.reviewDot} ${i === reviewIdx ? styles.reviewDotActive : ''}`}
+                        onClick={() => { resetReviewTimer(); setReviewIdx(i); }} aria-label={`Review ${i + 1}`} />
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className={styles.reviewCard} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 250 }}>
+                  <p className={styles.reviewText}>No reviews submitted yet. Be the first to add a review!</p>
                 </div>
-              </div>
+              )}
             </div>
-            <button className={styles.reviewNav} onClick={nextReview} aria-label="Next review"><FiChevronRight size={20} /></button>
-          </div>
-          <div className={styles.reviewDots}>
-            {REVIEWS.map((_, i) => (
-              <button key={i} className={`${styles.reviewDot} ${i === reviewIdx ? styles.reviewDotActive : ''}`}
-                onClick={() => { resetReviewTimer(); setReviewIdx(i); }} aria-label={`Review ${i + 1}`} />
-            ))}
+
+            {/* RIGHT COLUMN: Review Form */}
+            <div className={styles.reviewFormCard}>
+              <h3 className={styles.reviewFormTitle}>Write a Review</h3>
+              <form onSubmit={handleReviewSubmit} className={styles.reviewForm}>
+                <div className="form-group" style={{ marginBottom: '12px' }}>
+                  <label htmlFor="revName" className="form-label" style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>Name</label>
+                  <input
+                    type="text"
+                    id="revName"
+                    className="form-input"
+                    placeholder="Enter your name"
+                    value={formName}
+                    onChange={e => setFormName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: '12px' }}>
+                  <label htmlFor="revRole" className="form-label" style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>Designation / Role</label>
+                  <input
+                    type="text"
+                    id="revRole"
+                    className="form-input"
+                    placeholder="e.g. Wedding Client (optional)"
+                    value={formRole}
+                    onChange={e => setFormRole(e.target.value)}
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: '12px' }}>
+                  <label className="form-label" style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>Rating</label>
+                  <div className={styles.ratingSelection}>
+                    {[1, 2, 3, 4, 5].map((starVal) => (
+                      <FaStar
+                        key={starVal}
+                        className={`${styles.ratingStar} ${starVal <= formRating ? styles.ratingStarActive : ''}`}
+                        onClick={() => setFormRating(starVal)}
+                        role="button"
+                        aria-label={`Rate ${starVal} stars`}
+                        style={{ cursor: 'pointer', fontSize: '1.4rem', color: starVal <= formRating ? 'var(--accent)' : 'var(--border-subtle)', marginRight: '5px', transition: 'color 0.15s' }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="form-group" style={{ marginBottom: '12px' }}>
+                  <label htmlFor="revText" className="form-label" style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>Your Review</label>
+                  <textarea
+                    id="revText"
+                    className="form-textarea"
+                    placeholder="Tell us about your experience..."
+                    value={formText}
+                    onChange={e => setFormText(e.target.value)}
+                    rows={3}
+                    style={{ minHeight: '80px', height: '80px', resize: 'none' }}
+                    required
+                  />
+                </div>
+                
+                {formError && <p className={styles.formErrorMsg} style={{ color: '#E74C3C', fontSize: '0.8rem', margin: '4px 0' }}>{formError}</p>}
+                {formSuccess && <p className={styles.formSuccessMsg} style={{ color: '#2ECC71', fontSize: '0.8rem', margin: '4px 0' }}>Review submitted successfully!</p>}
+                
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{ width: '100%', justifyContent: 'center', marginTop: '8px' }}
+                  disabled={formSubmitting}
+                >
+                  {formSubmitting ? 'Submitting...' : 'Submit Review'}
+                </button>
+              </form>
+            </div>
+
           </div>
         </div>
       </section>

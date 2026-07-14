@@ -144,8 +144,7 @@ async function run() {
             features: [
               'Custom tailor measurements',
               'Premium quality stitching',
-              'Choice of lining & interlining',
-              'Perfect fit guarantee'
+              'Choice of lining & interlining'
             ]
           }
         ])

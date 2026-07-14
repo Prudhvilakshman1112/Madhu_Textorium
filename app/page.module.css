@@ -878,14 +878,93 @@
 }
 
 /* ═══════════════════ REVIEWS ═══════════════════ */
-.reviewsSection { background: var(--bg-soft); }
+.reviewsSection {
+  background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-charcoal) 50%, var(--bg-soft) 100%);
+  border-top: 1px solid var(--accent-border);
+  border-bottom: 1px solid var(--accent-border);
+}
+
+[data-theme="light"] .reviewsSection {
+  background: linear-gradient(135deg, #2C1208 0%, #3E1A0A 50%, #2C1208 100%);
+  border-top: 1px solid rgba(201,168,76,0.25);
+  border-bottom: 1px solid rgba(201,168,76,0.25);
+}
+
+[data-theme="light"] .reviewsSection :global(.section-label) {
+  background: rgba(201,168,76,0.12);
+  border-color: rgba(201,168,76,0.35);
+  color: #C9A84C;
+}
+
+[data-theme="light"] .reviewsSection :global(.section-title) {
+  color: #F5EDD5;
+}
+
+[data-theme="light"] .reviewsSection :global(.section-title) span {
+  color: #EFE6CF;
+}
+
+.reviewsContent {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 32px;
+  max-width: 1000px;
+  margin: 0 auto;
+  align-items: stretch;
+}
+
+.reviewsLeftCol {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+}
 
 .reviewsSlider {
   display: flex;
   align-items: center;
   gap: 20px;
-  max-width: 780px;
-  margin: 0 auto;
+  width: 100%;
+}
+
+.reviewFormCard {
+  background: var(--bg-card);
+  border: 1px solid var(--accent-border);
+  border-radius: 20px;
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+}
+
+.reviewFormTitle {
+  font-family: var(--font-serif);
+  font-size: 1.22rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.reviewForm {
+  display: flex;
+  flex-direction: column;
+}
+
+.ratingSelection {
+  display: flex;
+  align-items: center;
+}
+
+.ratingStar {
+  font-size: 1.4rem;
+  color: var(--border-subtle);
+  cursor: pointer;
+  margin-right: 5px;
+  transition: color 0.15s;
+}
+
+.ratingStarActive {
+  color: var(--accent);
 }
 
 .reviewNav {
@@ -1262,6 +1341,10 @@
   .productsGrid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
 
   /* Reviews */
+  .reviewsContent {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
   .reviewsSlider { gap: 10px; }
   .reviewCard { padding: 28px 20px; }
   .reviewText { font-size: 1rem; }
