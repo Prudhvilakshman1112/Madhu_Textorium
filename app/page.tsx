@@ -676,7 +676,7 @@ export default function HomePage() {
               {reviews.length > 0 ? (
                 <>
                   <div className={styles.reviewsSlider}>
-                    <button className={styles.reviewNav} onClick={prevReview} aria-label="Previous review"><FiChevronLeft size={20} /></button>
+                    <button className={`${styles.reviewNav} ${styles.prev}`} onClick={prevReview} aria-label="Previous review"><FiChevronLeft size={20} /></button>
                     <div className={styles.reviewCard}>
                       <FaQuoteLeft className={styles.reviewQuote} size={28} />
                       <div className="stars" style={{ display: 'flex', gap: '3px', justifyContent: 'center', marginBottom: '14px' }}>
@@ -693,7 +693,7 @@ export default function HomePage() {
                         </div>
                       </div>
                     </div>
-                    <button className={styles.reviewNav} onClick={nextReview} aria-label="Next review"><FiChevronRight size={20} /></button>
+                    <button className={`${styles.reviewNav} ${styles.next}`} onClick={nextReview} aria-label="Next review"><FiChevronRight size={20} /></button>
                   </div>
                   <div className={styles.reviewDots}>
                     {reviews.map((_, i) => (

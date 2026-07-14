@@ -972,7 +972,7 @@
   height: 46px;
   min-width: 46px;
   border-radius: 50%;
-  background: var(--accent-pale);
+  background: #ffffff;
   border: 1px solid var(--accent-border);
   color: var(--accent);
   display: flex;
@@ -981,6 +981,9 @@
   cursor: pointer;
   transition: all 0.2s;
 }
+
+.prev {}
+.next {}
 
 .reviewNav:hover {
   background: var(--accent-border);
@@ -1345,8 +1348,26 @@
     grid-template-columns: 1fr;
     gap: 32px;
   }
-  .reviewsSlider { gap: 10px; }
-  .reviewCard { padding: 28px 20px; }
+  .reviewsSlider {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .reviewCard {
+    grid-column: span 2;
+    order: 1;
+    padding: 28px 20px;
+  }
+  .prev {
+    grid-column: 1;
+    order: 2;
+    justify-self: end;
+  }
+  .next {
+    grid-column: 2;
+    order: 3;
+    justify-self: start;
+  }
   .reviewText { font-size: 1rem; }
 
   /* Footer */
@@ -1398,7 +1419,7 @@
   .productName { font-size: 0.82rem; }
 
   /* Reviews */
-  .reviewsSlider { flex-direction: column; }
+  /* Remove flex-direction column so grid layout works */
 
   /* CTA features - column */
   .ctaFeatures { flex-direction: column; gap: 10px; }
